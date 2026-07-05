@@ -25,3 +25,5 @@ hidden-config.js
 test-results/
 playwright-report/
 elm-home/
+tauri-web/
+src-tauri/target/
