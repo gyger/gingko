@@ -5,17 +5,17 @@ import Browser.Dom exposing (Element)
 import Coders exposing (treeToMarkdownOutline)
 import Doc.Data as Data
 import Doc.Fullscreen exposing (viewFullscreenButtonsDesktop)
+import Doc.History as History exposing (History)
 import Doc.TreeStructure as TreeStructure exposing (Msg(..))
-import Doc.TreeUtils exposing (getTree)
 import Doc.UI as UI
 import GlobalData
-import Html exposing (Html, button, div, h1, text)
+import Html exposing (Html, div, text)
 import Html.Attributes exposing (classList, id, title)
 import Html.Lazy exposing (lazy5)
-import Json.Decode as Dec exposing (Decoder, Value)
+import Json.Decode as Dec exposing (Value)
 import Json.Encode as Enc
 import Outgoing exposing (Msg(..), send)
-import Page.Doc exposing (Msg(..), MsgToParent(..), activate, checkoutCommit, toggleEditing)
+import Page.Doc exposing (MsgToParent(..))
 import Page.Doc.Export as Export exposing (ExportFormat(..), ExportSelection(..), exportView, toExtension)
 import Page.Doc.Incoming as Incoming exposing (Msg(..))
 import Page.Doc.Theme exposing (Theme(..), applyTheme)
@@ -23,6 +23,7 @@ import Task
 import Time
 import Translation exposing (Language, TranslationId, timeDistInWords)
 import Types exposing (Children(..), TooltipPosition, Tree, ViewMode(..))
+import UI.Header exposing (viewExportMenu)
 
 
 main : Program DataIn Model Msg
@@ -41,6 +42,7 @@ main =
 
 type alias Model =
     { docModel : Page.Doc.Model
+    , data : Data.Model
     , fileState : FileState
     , lastSave : Time.Posix
     , uiState : UIState
@@ -56,7 +58,7 @@ type FileState
 
 type UIState
     = DocUI
-    | VersionHistoryView { start : String, currentView : String }
+    | VersionHistoryView History
     | ExportPreview ( ExportSelection, ExportFormat )
 
 
@@ -86,13 +88,8 @@ init dataIn =
         globalData =
             GlobalData.decode dataIn.globalData
 
-        lastActives =
-            case Dec.decodeValue (Dec.field "last-actives" (Dec.list Dec.string)) dataIn.fileSettings of
-                Ok xs ->
-                    xs
-
-                Err _ ->
-                    []
+        lastActivesResult =
+            Dec.decodeValue (Dec.field "last-actives" (Dec.list Dec.string)) dataIn.fileSettings
 
         undoData =
             Data.success dataIn.undoData Data.empty
@@ -108,7 +105,9 @@ init dataIn =
                 Just fileData ->
                     case Coders.normalizeAndParse fileData of
                         Ok parsedTrees ->
-                            ( Page.Doc.init False globalData |> initDoc (Tree "0" "" (Children parsedTrees))
+                            ( Page.Doc.init False globalData
+                                |> setDocTree (Tree "0" "" (Children parsedTrees))
+                                |> Page.Doc.setLoading False
                             , if dataIn.isUntitled then
                                 UntitledFileDoc dataIn.filePath
 
@@ -117,7 +116,7 @@ init dataIn =
                             , Cmd.none
                             )
 
-                        Err err ->
+                        Err _ ->
                             ( Page.Doc.init True globalData
                             , UntitledFileDoc "parser error"
                             , Task.attempt (always NoOp) (Browser.Dom.focus "card-edit-1")
@@ -130,47 +129,27 @@ init dataIn =
             else
                 ( m, c )
 
-        ( updateDocModel, docCmd ) =
-            let
-                vs =
-                    initDocModel.viewState
-
-                ( newViewState, maybeActivate ) =
-                    case lastActives of
-                        fst :: rest ->
-                            ( { vs | active = fst, activePast = rest }
-                            , activate fst True
-                            )
-
-                        _ ->
-                            ( vs, activate "1" True )
-            in
-            ( { initDocModel
-                | data = undoData
-                , viewState = newViewState
-              }
-            , Cmd.none
-            )
-                |> maybeActivate
+        ( updatedDocModel, activateCmd ) =
+            Page.Doc.lastActives lastActivesResult initDocModel
     in
-    ( { docModel = updateDocModel
+    ( { docModel = updatedDocModel
+      , data = undoData
       , fileState = initFileState
       , lastSave = GlobalData.currentTime globalData
       , uiState = DocUI
       , tooltip = Nothing
       , theme = Default
       }
-    , Cmd.batch [ maybeFocus, Cmd.map GotDocMsg docCmd ]
+    , Cmd.batch [ maybeFocus, Cmd.map GotDocMsg activateCmd ]
     )
         |> maybeLocalSave
 
 
-initDoc : Tree -> Page.Doc.Model -> Page.Doc.Model
-initDoc tree docModel =
-    { docModel
-        | workingTree = TreeStructure.setTree tree docModel.workingTree
-        , loading = False
-    }
+setDocTree : Tree -> Page.Doc.Model -> Page.Doc.Model
+setDocTree tree docModel =
+    Page.Doc.setWorkingTree
+        (TreeStructure.setTree tree (Page.Doc.getWorkingTree docModel))
+        docModel
 
 
 
@@ -207,45 +186,58 @@ update msg ({ docModel } as model) =
     case msg of
         GotDocMsg docMsg ->
             let
-                ( newDocModel, newCmd, parentMsg ) =
-                    Page.Doc.update docMsg docModel
+                ( newDocModel, newCmd, parentMsgs ) =
+                    Page.Doc.opaqueUpdate docMsg docModel
                         |> (\( m, c, p ) -> ( m, Cmd.map GotDocMsg c, p ))
             in
-            case parentMsg of
-                CloseTooltip ->
-                    ( { model | docModel = newDocModel, tooltip = Nothing }, newCmd )
-
-                LocalSave saveTime ->
-                    ( { model | docModel = newDocModel }, newCmd )
-                        |> localSaveDo
-
-                Commit commitTime ->
-                    ( { model | docModel = newDocModel }, newCmd )
-                        |> addToHistoryDo
-
-                _ ->
-                    ( { model | docModel = newDocModel }, newCmd )
+            ( { model | docModel = newDocModel }, newCmd )
+                |> applyParentMsgs parentMsgs
 
         HistoryToggled isOpen ->
             if isOpen then
-                ( { model | uiState = VersionHistoryView { start = "ffadsf", currentView = "salkfjsda" } }, Cmd.none )
+                openHistorySlider model
 
             else
-                ( { model | uiState = DocUI }, Cmd.none )
+                -- Cancel history browsing: revert to the original tree
+                case model.uiState of
+                    VersionHistoryView history ->
+                        case History.revert history of
+                            Just origTree ->
+                                let
+                                    ( newDocModel, docCmd, _ ) =
+                                        Page.Doc.setTree origTree docModel
+                                in
+                                ( { model | docModel = newDocModel, uiState = DocUI }
+                                , Cmd.map GotDocMsg docCmd
+                                )
+
+                            Nothing ->
+                                ( { model | uiState = DocUI }, Cmd.none )
+
+                    _ ->
+                        ( { model | uiState = DocUI }, Cmd.none )
 
         CheckoutCommit commitSha ->
             case model.uiState of
-                VersionHistoryView historyState ->
-                    let
-                        ( newDocModel, docCmd ) =
-                            checkoutCommit commitSha docModel
-                    in
-                    ( { model
-                        | docModel = newDocModel
-                        , uiState = VersionHistoryView { historyState | currentView = commitSha }
-                      }
-                    , Cmd.map GotDocMsg docCmd
-                    )
+                VersionHistoryView history ->
+                    case History.checkoutVersion commitSha history of
+                        Just ( newHistory, newTree ) ->
+                            let
+                                ( newDocModel, docCmd, _ ) =
+                                    Page.Doc.setTree newTree docModel
+
+                                ( activatedDocModel, activateCmd ) =
+                                    Page.Doc.maybeActivate newDocModel
+                            in
+                            ( { model
+                                | docModel = activatedDocModel
+                                , uiState = VersionHistoryView newHistory
+                              }
+                            , Cmd.map GotDocMsg (Cmd.batch [ docCmd, activateCmd ])
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -255,6 +247,7 @@ update msg ({ docModel } as model) =
             , Cmd.none
             )
                 |> localSaveDo
+                |> addToHistoryDo
 
         --
         CloseExport ->
@@ -267,7 +260,7 @@ update msg ({ docModel } as model) =
 
         ExportFormatChanged newExpFormat ->
             case model.uiState of
-                ExportPreview ( oldExpSelection, oldExpFormat ) ->
+                ExportPreview ( oldExpSelection, _ ) ->
                     ( { model | uiState = ExportPreview ( oldExpSelection, newExpFormat ) }, Cmd.none )
 
                 _ ->
@@ -275,14 +268,14 @@ update msg ({ docModel } as model) =
 
         ExportSelectionChanged newExpSelection ->
             case model.uiState of
-                ExportPreview ( oldExpSelection, oldExpFormat ) ->
+                ExportPreview ( _, oldExpFormat ) ->
                     ( { model | uiState = ExportPreview ( newExpSelection, oldExpFormat ) }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
 
         Export ->
-            case ( model.uiState, getTree model.docModel.viewState.active model.docModel.workingTree.tree ) of
+            case ( model.uiState, Page.Doc.getActiveTree docModel ) of
                 ( ExportPreview ( expSel, expFormat ), Just activeTree ) ->
                     ( model
                     , send <|
@@ -290,7 +283,7 @@ update msg ({ docModel } as model) =
                             (Export.toString (fileStateToPath model.fileState)
                                 ( expSel, expFormat )
                                 activeTree
-                                model.docModel.workingTree.tree
+                                (Page.Doc.getWorkingTree docModel).tree
                             )
                     )
 
@@ -300,16 +293,19 @@ update msg ({ docModel } as model) =
         TimeUpdate newTime ->
             let
                 newGlobalData =
-                    model.docModel.globalData
+                    Page.Doc.getGlobalData docModel
                         |> GlobalData.updateTime newTime
             in
-            ( { model | docModel = { docModel | globalData = newGlobalData } }, Cmd.none )
+            ( { model | docModel = Page.Doc.setGlobalData newGlobalData docModel }, Cmd.none )
 
         Incoming incomingMsg ->
             let
                 passthrough =
-                    Page.Doc.incoming incomingMsg docModel
-                        |> Tuple.mapBoth (\m -> { model | docModel = m }) (Cmd.map GotDocMsg)
+                    Page.Doc.opaqueIncoming incomingMsg docModel
+                        |> (\( d, c, p ) ->
+                                ( { model | docModel = d }, Cmd.map GotDocMsg c )
+                                    |> applyParentMsgs p
+                           )
             in
             case incomingMsg of
                 SavedToFile newPath savedTime ->
@@ -318,23 +314,51 @@ update msg ({ docModel } as model) =
                             fileStateToPath model.fileState
 
                         newGlobalData =
-                            model.docModel.globalData |> GlobalData.updateTime savedTime
+                            Page.Doc.getGlobalData docModel
+                                |> GlobalData.updateTime savedTime
+
+                        newDocModel =
+                            docModel
+                                |> Page.Doc.setDirty False
+                                |> Page.Doc.setGlobalData newGlobalData
                     in
                     if newPath /= oldPath then
-                        ( { model | fileState = FileDoc newPath, docModel = { docModel | dirty = False, globalData = newGlobalData }, lastSave = savedTime }, Cmd.none )
+                        ( { model | fileState = FileDoc newPath, docModel = newDocModel, lastSave = savedTime }, Cmd.none )
 
                     else
-                        ( { model | docModel = { docModel | dirty = False, globalData = newGlobalData }, lastSave = savedTime }, Cmd.none )
+                        ( { model | docModel = newDocModel, lastSave = savedTime }, Cmd.none )
+
+                DataSaved dataIn ->
+                    let
+                        newData =
+                            Data.success dataIn model.data
+
+                        newUiState =
+                            case model.uiState of
+                                VersionHistoryView history ->
+                                    VersionHistoryView (History.update newData history)
+
+                                other ->
+                                    other
+                    in
+                    ( { model
+                        | data = newData
+                        , uiState = newUiState
+                        , docModel = Page.Doc.setDirty False docModel
+                      }
+                    , Cmd.none
+                    )
 
                 ClickedExport ->
                     ( { model | uiState = ExportPreview ( ExportEverything, DOCX ) }, Cmd.none )
 
                 Keyboard "mod+z" ->
-                    if model.docModel.viewState.viewMode == Normal then
-                        openHistorySlider model
+                    case Page.Doc.getViewMode docModel of
+                        Normal _ ->
+                            openHistorySlider model
 
-                    else
-                        passthrough
+                        _ ->
+                            passthrough
 
                 _ ->
                     passthrough
@@ -364,19 +388,45 @@ update msg ({ docModel } as model) =
 
         --
         ExitFullscreenRequested ->
-            -- TODO:
-            ( model, Cmd.none )
+            Page.Doc.opaqueIncoming (Keyboard "esc") docModel
+                |> (\( d, c, p ) ->
+                        ( { model | docModel = d }, Cmd.map GotDocMsg c )
+                            |> applyParentMsgs p
+                   )
 
         SaveAndExitFullscreen ->
-            let
-                ( newDocModel, newDocCmd ) =
-                    docModel
-                        |> toggleEditing
-            in
-            ( { model | docModel = newDocModel }, Cmd.map GotDocMsg newDocCmd )
+            Page.Doc.opaqueIncoming (Keyboard "mod+enter") docModel
+                |> (\( d, c, p ) ->
+                        ( { model | docModel = d }, Cmd.map GotDocMsg c )
+                            |> applyParentMsgs p
+                   )
 
         NoOp ->
             ( model, Cmd.none )
+
+
+applyParentMsgs : List MsgToParent -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+applyParentMsgs parentMsgs tuple =
+    List.foldl applyParentMsg tuple parentMsgs
+
+
+applyParentMsg : MsgToParent -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+applyParentMsg parentMsg ( model, prevCmd ) =
+    case parentMsg of
+        ParentAddToast _ _ ->
+            ( model, prevCmd )
+
+        CloseTooltip ->
+            ( { model | tooltip = Nothing }, prevCmd )
+
+        OpenAIPrompt ->
+            ( model, prevCmd )
+
+        LocalSave _ ->
+            localSaveDo ( model, prevCmd )
+
+        Commit ->
+            addToHistoryDo ( model, prevCmd )
 
 
 localSaveDo : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
@@ -387,16 +437,20 @@ localSaveDo mcTuple =
 sendSaveMsg : (String -> String -> Outgoing.Msg) -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
 sendSaveMsg msg ( { fileState } as model, prevCmd ) =
     let
-        vstate =
-            model.docModel.viewState
+        workingTree =
+            Page.Doc.getWorkingTree model.docModel
 
         treeToSave =
-            case vstate.viewMode of
-                Normal ->
-                    model.docModel.workingTree.tree
+            case Page.Doc.getViewMode model.docModel of
+                Normal _ ->
+                    workingTree.tree
 
-                _ ->
-                    TreeStructure.update (Upd vstate.active model.docModel.field) model.docModel.workingTree
+                Editing { cardId, field } ->
+                    TreeStructure.update (Upd cardId field) workingTree
+                        |> .tree
+
+                FullscreenEditing { cardId, field } ->
+                    TreeStructure.update (Upd cardId field) workingTree
                         |> .tree
     in
     ( model
@@ -418,7 +472,7 @@ addToHistoryDo ( { docModel, fileState } as model, prevCmd ) =
                 |> Enc.string
 
         commitReq_ =
-            Data.requestCommit docModel.workingTree.tree author docModel.data metadata
+            Data.requestCommit (Page.Doc.getWorkingTree docModel).tree author model.data metadata
     in
     case commitReq_ of
         Just commitReq ->
@@ -435,9 +489,13 @@ addToHistoryDo ( { docModel, fileState } as model, prevCmd ) =
 
 openHistorySlider : Model -> ( Model, Cmd Msg )
 openHistorySlider model =
-    case Data.head "heads/master" model.docModel.data of
-        Just refObj ->
-            ( { model | uiState = VersionHistoryView { start = refObj.value, currentView = refObj.value } }, Cmd.none )
+    let
+        history =
+            History.init (Page.Doc.getWorkingTree model.docModel).tree model.data
+    in
+    case History.getCurrentVersionId history of
+        Just _ ->
+            ( { model | uiState = VersionHistoryView history }, Cmd.none )
 
         Nothing ->
             ( model, Cmd.none )
@@ -451,21 +509,19 @@ view : Model -> List (Html Msg)
 view ({ docModel } as model) =
     let
         globalData =
-            model.docModel.globalData
+            Page.Doc.getGlobalData docModel
 
         lang =
             GlobalData.language globalData
 
         activeTree_ =
-            getTree model.docModel.viewState.active model.docModel.workingTree.tree
+            Page.Doc.getActiveTree docModel
 
         isFullscreen =
-            case docModel.viewState.viewMode of
-                FullscreenEditing ->
-                    True
+            Page.Doc.isFullscreen docModel
 
-                _ ->
-                    False
+        isDirty =
+            Page.Doc.isDirty docModel
 
         exportViewOk expSettings =
             lazy5 exportView
@@ -480,7 +536,7 @@ view ({ docModel } as model) =
         maybeExportView expSettings =
             case activeTree_ of
                 Just activeTree ->
-                    exportViewOk expSettings activeTree model.docModel.workingTree.tree
+                    exportViewOk expSettings activeTree (Page.Doc.getWorkingTree docModel).tree
 
                 Nothing ->
                     text ""
@@ -496,7 +552,7 @@ view ({ docModel } as model) =
     [ div [ id "desktop-root", applyTheme model.theme ]
         ([ viewFileSaveIndicator
             { language = lang
-            , dirty = model.docModel.dirty
+            , dirty = isDirty
             , isFullscreen = isFullscreen
             , lastSave = model.lastSave
             , currentTime = GlobalData.currentTime globalData
@@ -508,27 +564,28 @@ view ({ docModel } as model) =
                 , tooltipRequested = TooltipRequested
                 , tooltipClosed = TooltipClosed
                 }
-                model.docModel
+                (Just model.lastSave)
+                (Just model.lastSave)
+                docModel
             ++ (case model.uiState of
                     DocUI ->
                         []
 
-                    VersionHistoryView histViewData ->
-                        [ UI.viewHistory lang
-                            { cancel = HistoryToggled False
-                            , checkout = CheckoutCommit
-                            , restore = Restore
+                    VersionHistoryView history ->
+                        [ History.view
+                            { lang = lang
                             , noOp = NoOp
-                            , tooltipClosed = TooltipClosed
+                            , checkoutTree = CheckoutCommit
+                            , restore = Restore
+                            , cancel = HistoryToggled False
                             , tooltipRequested = TooltipRequested
+                            , tooltipClosed = TooltipClosed
                             }
-                            (GlobalData.currentTime globalData)
-                            model.docModel.data
-                            histViewData
+                            history
                         ]
 
                     ExportPreview exportSettings ->
-                        [ UI.viewExportMenu lang
+                        [ viewExportMenu lang
                             { exportFormatChanged = ExportFormatChanged
                             , exportSelectionChanged = ExportSelectionChanged
                             , tooltipRequested = TooltipRequested
@@ -545,8 +602,8 @@ view ({ docModel } as model) =
                         { exitFullscreenRequested = ExitFullscreenRequested
                         , saveAndExitFullscreen = SaveAndExitFullscreen
                         }
-                        { isMac = GlobalData.isMac docModel.globalData
-                        , dirty = docModel.dirty
+                        { isMac = GlobalData.isMac globalData
+                        , dirty = isDirty
                         }
                         |> List.singleton
 
@@ -587,7 +644,7 @@ viewFileSaveIndicator { language, dirty, isFullscreen, lastSave, currentTime } =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Incoming.subscribe Incoming LogErr
         , Time.every (9 * 1000) TimeUpdate
