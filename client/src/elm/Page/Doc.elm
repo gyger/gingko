@@ -1046,6 +1046,9 @@ incoming incomingMsg model =
         ThemeChanged _ ->
             ( model, Cmd.none, [] )
 
+        FileChangedOnDisk _ ->
+            ( model, Cmd.none, [] )
+
         -- === INTEGRATION TEST HOOKS ===
         TestTextImportLoaded _ ->
             ( model, Cmd.none, [] )
