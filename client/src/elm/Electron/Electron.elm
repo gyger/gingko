@@ -94,10 +94,17 @@ init dataIn =
         undoData =
             Data.success dataIn.undoData Data.empty
 
+        -- The default tree is empty; the web app creates the first card via the
+        -- database flow, so the desktop wrapper has to seed card "1" itself
+        -- (init True starts in Editing mode on card "1").
+        newDocTree =
+            Tree "0" "" (Children [ Tree "1" "" (Children []) ])
+
         ( initDocModel, initFileState, maybeFocus ) =
             case dataIn.fileData of
                 Nothing ->
                     ( Page.Doc.init True globalData
+                        |> setDocTree newDocTree
                     , UntitledFileDoc dataIn.filePath
                     , Task.attempt (always NoOp) (Browser.Dom.focus "card-edit-1")
                     )
@@ -105,8 +112,19 @@ init dataIn =
                 Just fileData ->
                     case Coders.normalizeAndParse fileData of
                         Ok parsedTrees ->
+                            let
+                                -- Files without <gingko-card> tags (e.g. plain
+                                -- markdown) parse to zero cards; load the whole
+                                -- content as a single card instead.
+                                loadedTree =
+                                    if List.isEmpty parsedTrees then
+                                        Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
+
+                                    else
+                                        Tree "0" "" (Children parsedTrees)
+                            in
                             ( Page.Doc.init False globalData
-                                |> setDocTree (Tree "0" "" (Children parsedTrees))
+                                |> setDocTree loadedTree
                                 |> Page.Doc.setLoading False
                             , if dataIn.isUntitled then
                                 UntitledFileDoc dataIn.filePath
@@ -118,6 +136,7 @@ init dataIn =
 
                         Err _ ->
                             ( Page.Doc.init True globalData
+                                |> setDocTree newDocTree
                             , UntitledFileDoc "parser error"
                             , Task.attempt (always NoOp) (Browser.Dom.focus "card-edit-1")
                             )
