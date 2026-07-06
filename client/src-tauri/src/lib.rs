@@ -341,15 +341,33 @@ fn focused_doc_window(app: &AppHandle) -> Option<WebviewWindow> {
         })
 }
 
+// Window creation must not happen on the main thread (menu events run there):
+// WebviewWindowBuilder::build() deadlocks on Windows if the event loop is
+// blocked by the caller (wry#583). Spawn a worker thread instead.
+fn open_doc_off_main(app: &AppHandle, file_path: Option<PathBuf>, close_home: bool) {
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let from_home = if close_home { app.get_webview_window("home") } else { None };
+        if create_doc_window(&app, file_path, None).is_ok() {
+            if let Some(home) = from_home {
+                let _ = home.destroy();
+            }
+        }
+    });
+}
+
+fn open_modal_off_main(app: &AppHandle, kind: &str) {
+    let app = app.clone();
+    let kind = kind.to_string();
+    std::thread::spawn(move || {
+        open_modal_window(&app, &kind);
+    });
+}
+
 fn handle_menu_event(app: &AppHandle, id: &str) {
     match id {
         "menu:new" => {
-            let from_home = app.get_webview_window("home");
-            if create_doc_window(app, None, None).is_ok() {
-                if let Some(home) = from_home {
-                    let _ = home.destroy();
-                }
-            }
+            open_doc_off_main(app, None, true);
         }
         "menu:open" => {
             open_file_dialog(app);
@@ -357,10 +375,10 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
         "menu:exit" => {
             app.exit(0);
         }
-        "menu:shortcuts" => open_modal_window(app, "shortcuts"),
-        "menu:videos" => open_modal_window(app, "videos"),
-        "menu:faq" => open_modal_window(app, "faq"),
-        "menu:support" => open_modal_window(app, "support"),
+        "menu:shortcuts" => open_modal_off_main(app, "shortcuts"),
+        "menu:videos" => open_modal_off_main(app, "videos"),
+        "menu:faq" => open_modal_off_main(app, "faq"),
+        "menu:support" => open_modal_off_main(app, "support"),
         "menu:devtools" => {
             if let Some(win) = focused_doc_window(app) {
                 win.open_devtools();
@@ -373,11 +391,7 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
         }
         id if id.starts_with("recent:") => {
             let path = id.trim_start_matches("recent:").to_string();
-            let from_home = app.get_webview_window("home");
-            let _ = create_doc_window(app, Some(PathBuf::from(path)), None);
-            if let Some(home) = from_home {
-                let _ = home.destroy();
-            }
+            open_doc_off_main(app, Some(PathBuf::from(path)), true);
         }
         // Forwarded to the focused document window's JS side.
         "menu:save" | "menu:saveas" | "menu:export" | "menu:undo" | "menu:cut" | "menu:copy"
@@ -391,22 +405,27 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
 }
 
 fn open_file_dialog(app: &AppHandle) {
-    let app_handle = app.clone();
-    app.dialog()
-        .file()
-        .add_filter("Gingko Writer Document", &["gkw"])
-        .add_filter("Gingko Desktop Legacy", &["gko"])
-        .add_filter("Markdown Document", &["md"])
-        .add_filter("All Files", &["*"])
-        .pick_file(move |file_path| {
-            if let Some(fp) = file_path.and_then(|f| f.into_path().ok()) {
-                let from_home = app_handle.get_webview_window("home");
-                let _ = create_doc_window(&app_handle, Some(fp), None);
+    let app = app.clone();
+    // Runs the blocking dialog and the window creation on a worker thread;
+    // both would deadlock on the main thread (wry#583).
+    std::thread::spawn(move || {
+        let picked = app
+            .dialog()
+            .file()
+            .add_filter("Gingko Writer Document", &["gkw"])
+            .add_filter("Gingko Desktop Legacy", &["gko"])
+            .add_filter("Markdown Document", &["md"])
+            .add_filter("All Files", &["*"])
+            .blocking_pick_file();
+        if let Some(fp) = picked.and_then(|f| f.into_path().ok()) {
+            let from_home = app.get_webview_window("home");
+            if create_doc_window(&app, Some(fp), None).is_ok() {
                 if let Some(home) = from_home {
                     let _ = home.destroy();
                 }
             }
-        });
+        }
+    });
 }
 
 fn open_modal_window(app: &AppHandle, kind: &str) {
@@ -533,7 +552,7 @@ struct HomeState {
     language: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_home_state(app: AppHandle) -> HomeState {
     let settings = load_settings(&app);
     HomeState {
@@ -556,7 +575,7 @@ struct DocInit {
     is_untitled: bool,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_doc_state(app: AppHandle, window: WebviewWindow, state: State<AppState>) -> Result<DocInit, String> {
     let mut docs = state.docs.lock().unwrap();
     let doc = docs
@@ -590,7 +609,7 @@ fn get_doc_state(app: AppHandle, window: WebviewWindow, state: State<AppState>) 
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn new_document(app: AppHandle) -> Result<(), String> {
     let from_home = app.get_webview_window("home");
     create_doc_window(&app, None, None)?;
@@ -600,7 +619,7 @@ fn new_document(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn open_document(app: AppHandle, path: String) -> Result<(), String> {
     let from_home = app.get_webview_window("home");
     create_doc_window(&app, Some(PathBuf::from(path)), None)?;
@@ -610,12 +629,12 @@ fn open_document(app: AppHandle, path: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn open_document_dialog(app: AppHandle) {
     open_file_dialog(&app);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn import_document(app: AppHandle, file_data: String) -> Result<(), String> {
     let from_home = app.get_webview_window("home");
     create_doc_window(&app, None, Some(file_data))?;
@@ -625,7 +644,7 @@ fn import_document(app: AppHandle, file_data: String) -> Result<(), String> {
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn remove_recent_document(app: AppHandle, path: String) {
     let docs: Vec<RecentDoc> = get_recent_documents(&app)
         .into_iter()
@@ -636,7 +655,7 @@ fn remove_recent_document(app: AppHandle, path: String) {
 }
 
 // Returns (filePath, timestampMs, isUntitled), mirroring the Electron 'file-saved' payload.
-#[tauri::command]
+#[tauri::command(async)]
 fn save_file(
     window: WebviewWindow,
     state: State<AppState>,
@@ -659,7 +678,7 @@ fn save_file(
     ))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn save_as(
     app: AppHandle,
     window: WebviewWindow,
@@ -712,7 +731,7 @@ fn save_as(
 
 // Persist pre-filtered commit objects. The renderer computes the commit
 // (port of src/electron/commit.js) and filters already-saved immutables.
-#[tauri::command]
+#[tauri::command(async)]
 fn commit_data(
     app: AppHandle,
     window: WebviewWindow,
@@ -737,7 +756,7 @@ fn commit_data(
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn local_store_set(app: AppHandle, window: WebviewWindow, state: State<AppState>, key: String, value: Value) {
     let path_str = {
         let docs = state.docs.lock().unwrap();
@@ -757,7 +776,7 @@ fn local_store_set(app: AppHandle, window: WebviewWindow, state: State<AppState>
     save_settings(&app, &settings);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_edit_mode(app: AppHandle, state: State<AppState>, is_edit_mode: bool) {
     {
         let mut ctx = state.menu_ctx.lock().unwrap();
@@ -769,12 +788,12 @@ fn set_edit_mode(app: AppHandle, state: State<AppState>, is_edit_mode: bool) {
     apply_menu(&app);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn export_file(path: String, content: String) -> Result<(), String> {
     fs::write(path, content).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn export_docx(app: AppHandle, path: String, content: String) -> Result<(), String> {
     let target = PathBuf::from(&path);
     let tmp_md = temp_dir().join(format!(
@@ -836,7 +855,7 @@ fn export_docx(app: AppHandle, path: String, content: String) -> Result<(), Stri
 }
 
 // Three-button "Save changes?" dialog. Returns "save" | "discard" | "cancel".
-#[tauri::command]
+#[tauri::command(async)]
 fn ask_save_changes() -> String {
     let answer = rfd::MessageDialog::new()
         .set_title("Save changes?")
@@ -852,7 +871,7 @@ fn ask_save_changes() -> String {
 }
 
 // Pick a JSON file to import and return its contents.
-#[tauri::command]
+#[tauri::command(async)]
 fn import_json_dialog(window: WebviewWindow) -> Option<String> {
     window
         .dialog()
@@ -863,7 +882,7 @@ fn import_json_dialog(window: WebviewWindow) -> Option<String> {
         .and_then(|p| fs::read_to_string(p).ok())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn save_file_dialog(window: WebviewWindow, state: State<AppState>) -> Option<String> {
     let default_path = {
         let docs = state.docs.lock().unwrap();
@@ -894,7 +913,7 @@ fn save_file_dialog(window: WebviewWindow, state: State<AppState>) -> Option<Str
         .map(|p| p.to_string_lossy().to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn export_file_dialog(window: WebviewWindow, state: State<AppState>, format: String) -> Option<String> {
     let default_name = {
         let docs = state.docs.lock().unwrap();
@@ -920,18 +939,18 @@ fn export_file_dialog(window: WebviewWindow, state: State<AppState>, format: Str
         .map(|p| p.to_string_lossy().to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn close_document(app: AppHandle, window: WebviewWindow) {
     cleanup_doc_window(&app, window.label());
     let _ = window.destroy();
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn open_modal(app: AppHandle, kind: String) {
     open_modal_window(&app, &kind);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn open_external(app: AppHandle, url: String) {
     use tauri_plugin_opener::OpenerExt;
     let _ = app.opener().open_url(url, None::<String>);
@@ -970,7 +989,7 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Second instance: open the file it was launched with, or focus.
             if let Some(path) = path_argument(&args) {
-                let _ = create_doc_window(app, Some(path), None);
+                open_doc_off_main(app, Some(path), false);
             } else if let Some(win) = app.webview_windows().values().next() {
                 let _ = win.set_focus();
             }
@@ -1030,14 +1049,15 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Reopen { .. } = event {
                 if app.webview_windows().is_empty() {
-                    create_home_window(app);
+                    let app = app.clone();
+                    std::thread::spawn(move || create_home_window(&app));
                 }
             }
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Opened { urls } = event {
+            if let tauri::RunEvent::Opened { ref urls } = event {
                 for url in urls {
                     if let Ok(path) = url.to_file_path() {
-                        let _ = create_doc_window(app, Some(path), None);
+                        open_doc_off_main(app, Some(path), false);
                     }
                 }
             }
