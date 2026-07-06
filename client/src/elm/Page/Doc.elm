@@ -1043,6 +1043,9 @@ incoming incomingMsg model =
         DataSaved _ ->
             ( model, Cmd.none, [] )
 
+        ThemeChanged _ ->
+            ( model, Cmd.none, [] )
+
         -- === INTEGRATION TEST HOOKS ===
         TestTextImportLoaded _ ->
             ( model, Cmd.none, [] )
