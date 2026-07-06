@@ -15,6 +15,20 @@
 #history-menu {
   z-index: 1;
 }
+/* The web app places the collapsed shortcut tray below its 40px header;
+   the desktop has no header bar, so pin it to the top edge. */
+#desktop-root #shortcuts-tray:not(.open) {
+  top: 0;
+  border-radius: 0 0 0 6px;
+}
+/* When open, the tray covers the save indicator (z-index 5). */
+/* Fixed width, so the document doesn't shift when the tray switches between
+   the card and the text-editing shortcuts. */
+#desktop-root #shortcuts-tray.open {
+  z-index: 6;
+  box-sizing: content-box;
+  width: 200px;
+}
 #export-menu {
   z-index: 5;
   grid-template-columns: 1fr 1fr min-content;
@@ -38,7 +52,8 @@
   color: var(--ui-4-fg);
   mix-blend-mode: hard-light;
   top: 8px;
-  right: 10px;
+  /* Leave room for the shortcut-tray toggle icon at the right edge. */
+  right: 48px;
   z-index: 5;
 }
 #file-save-indicator.dirty {
