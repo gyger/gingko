@@ -1,6 +1,8 @@
 // Gingko Writer Desktop — Tauri 2 backend.
 // Port of the Electron main process (src/electron/main.js).
 
+mod legacy;
+
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -456,6 +458,44 @@ fn create_doc_window(
 ) -> Result<(), String> {
     let state: State<AppState> = app.state();
 
+    // Gingko Desktop 2.x saved .gko files as 7z archives of a database.
+    // Offer to convert those; the result opens as a new Untitled document
+    // (the original file is left untouched).
+    let (file_path, init_file_data) = match file_path {
+        Some(fp)
+            if fs::read(&fp)
+                .map(|raw| raw.starts_with(legacy::SEVENZ_MAGIC))
+                .unwrap_or(false) =>
+        {
+            let convert = app
+                .dialog()
+                .message(
+                    "This file is from Gingko Desktop 2.x, and must be converted to the new format.\n\n\
+                     Convert and open a copy? (The original file is not modified.)",
+                )
+                .title("Legacy Gingko Desktop file")
+                .buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancelCustom(
+                    "Convert".into(),
+                    "Cancel".into(),
+                ))
+                .blocking_show();
+            if !convert {
+                return Err("Conversion declined".into());
+            }
+            match legacy::convert_gko_to_markdown(&fp) {
+                Ok(markdown) => (None, Some(markdown)),
+                Err(e) => {
+                    app.dialog()
+                        .message(format!("Could not convert this file:\n{}", e))
+                        .title("Conversion failed")
+                        .blocking_show();
+                    return Err(e);
+                }
+            }
+        }
+        other => (other, init_file_data),
+    };
+
     // Refuse to open the same file twice.
     if let Some(ref fp) = file_path {
         let docs = state.docs.lock().unwrap();
@@ -479,6 +519,17 @@ fn create_doc_window(
             (fp, init_file_data)
         }
         Some(fp) => {
+            // Only text-based documents are supported (legacy 7z archives
+            // were already converted above).
+            let raw = fs::read(&fp).map_err(|e| e.to_string())?;
+            let data = String::from_utf8(raw).map_err(|_| {
+                app.dialog()
+                    .message("This file is not a text document, and cannot be opened.")
+                    .title("Cannot open file")
+                    .blocking_show();
+                "Not a UTF-8 text file".to_string()
+            })?;
+
             // Save backup copy
             let base = fp
                 .file_stem()
@@ -489,7 +540,6 @@ fn create_doc_window(
 
             // Open swap copy
             fs::copy(&fp, swp_path(&fp)).map_err(|e| e.to_string())?;
-            let data = fs::read_to_string(swp_path(&fp)).map_err(|e| e.to_string())?;
 
             add_to_recent_documents(app, &fp);
             (fp, Some(data))
