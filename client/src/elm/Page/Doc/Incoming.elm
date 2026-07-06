@@ -30,6 +30,7 @@ type
     | SaveError String
     | ClickedExport
     | DataSaved Dec.Value
+    | ThemeChanged Dec.Value
       -- === UI ===
     | Keyboard String
       -- === Misc ===
@@ -193,6 +194,9 @@ subscribe tagger onError =
 
                 "DataSaved" ->
                     tagger <| DataSaved outsideInfo.data
+
+                "ThemeChanged" ->
+                    tagger <| ThemeChanged outsideInfo.data
 
                 -- === UI ===
                 "Keyboard" ->
