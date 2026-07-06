@@ -31,6 +31,7 @@ type
     | ClickedExport
     | DataSaved Dec.Value
     | ThemeChanged Dec.Value
+    | FileChangedOnDisk String
       -- === UI ===
     | Keyboard String
       -- === Misc ===
@@ -197,6 +198,14 @@ subscribe tagger onError =
 
                 "ThemeChanged" ->
                     tagger <| ThemeChanged outsideInfo.data
+
+                "FileChangedOnDisk" ->
+                    case decodeValue Dec.string outsideInfo.data of
+                        Ok newContent ->
+                            tagger <| FileChangedOnDisk newContent
+
+                        Err e ->
+                            onError (errorToString e)
 
                 -- === UI ===
                 "Keyboard" ->
