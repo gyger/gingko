@@ -49,6 +49,7 @@ type alias Model =
     , uiState : UIState
     , tooltip : Maybe ( Element, TooltipPosition, TranslationId )
     , theme : Theme
+    , shortcutTrayOpen : Bool
     }
 
 
@@ -91,6 +92,15 @@ init dataIn =
 
         lastActivesResult =
             Dec.decodeValue (Dec.field "last-actives" (Dec.list Dec.string)) dataIn.fileSettings
+
+        -- Theme.decoder itself reads the "theme" field of the settings object.
+        savedTheme =
+            Dec.decodeValue Page.Doc.Theme.decoder dataIn.fileSettings
+                |> Result.withDefault Default
+
+        savedTrayOpen =
+            Dec.decodeValue (Dec.field "shortcutTrayOpen" Dec.bool) dataIn.fileSettings
+                |> Result.withDefault False
 
         undoData =
             Data.success dataIn.undoData Data.empty
@@ -159,7 +169,8 @@ init dataIn =
       , saveError = Nothing
       , uiState = DocUI
       , tooltip = Nothing
-      , theme = Default
+      , theme = savedTheme
+      , shortcutTrayOpen = savedTrayOpen
       }
     , Cmd.batch [ maybeFocus, Cmd.map GotDocMsg activateCmd ]
     )
@@ -193,6 +204,8 @@ type Msg
     | TooltipRequested String TooltipPosition TranslationId
     | TooltipReceived Element TooltipPosition TranslationId
     | TooltipClosed
+      --
+    | ToggledShortcutTray
       --
     | ExitFullscreenRequested
     | SaveAndExitFullscreen
@@ -377,6 +390,14 @@ update msg ({ docModel } as model) =
                     -- document (e.g. after Save As), even if nothing changed.
                     localSaveDo ( model, Cmd.none )
 
+                Incoming.ThemeChanged themeValue ->
+                    case Dec.decodeValue Page.Doc.Theme.decoder themeValue of
+                        Ok newTheme ->
+                            ( { model | theme = newTheme }, send <| SaveThemeSetting newTheme )
+
+                        Err _ ->
+                            ( model, Cmd.none )
+
                 Keyboard "mod+z" ->
                     case Page.Doc.getViewMode docModel of
                         Normal _ ->
@@ -410,6 +431,15 @@ update msg ({ docModel } as model) =
 
         TooltipClosed ->
             ( { model | tooltip = Nothing }, Cmd.none )
+
+        ToggledShortcutTray ->
+            let
+                newIsOpen =
+                    not model.shortcutTrayOpen
+            in
+            ( { model | shortcutTrayOpen = newIsOpen, tooltip = Nothing }
+            , send <| SaveUserSetting ( "shortcutTrayOpen", Enc.bool newIsOpen )
+            )
 
         --
         ExitFullscreenRequested ->
@@ -638,6 +668,20 @@ view ({ docModel } as model) =
                 else
                     []
                )
+            ++ UI.viewShortcuts
+                { toggledShortcutTray = ToggledShortcutTray
+                , tooltipRequested = TooltipRequested
+                , tooltipClosed = TooltipClosed
+                }
+                { lang = lang
+                , isOpen = model.shortcutTrayOpen
+                , isMac = GlobalData.isMac globalData
+                , aiFeaturesEnabled = False
+                , isAIPromptOpen = False
+                , children = (Page.Doc.getWorkingTree docModel).tree.children
+                , textCursorInfo = Page.Doc.getTextCursorInfo docModel
+                , viewMode = Page.Doc.getViewMode docModel
+                }
             ++ [ viewTooltip ]
         )
     ]

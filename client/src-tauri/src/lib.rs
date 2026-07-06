@@ -310,6 +310,21 @@ fn build_menu(app: &AppHandle, doc: Option<DocMenuState>) -> tauri::Result<MenuH
         )
         .build()?;
 
+    let mut theme_menu = SubmenuBuilder::new(app, "&Theme");
+    for (id, label) in [
+        ("theme:default", "Default"),
+        ("theme:classic", "Classic"),
+        ("theme:gray", "Gray"),
+        ("theme:green", "Green"),
+        ("theme:turquoise", "Turquoise"),
+        ("theme:dark", "Dark"),
+    ] {
+        theme_menu = theme_menu.item(&MenuItemBuilder::with_id(id, label).build(app)?);
+    }
+    let view_menu = SubmenuBuilder::new(app, "&View")
+        .item(&theme_menu.build()?)
+        .build()?;
+
     let help_menu = SubmenuBuilder::new(app, "&Help")
         .item(&MenuItemBuilder::with_id("menu:shortcuts", "&Keyboard Shortcuts").build(app)?)
         .item(&MenuItemBuilder::with_id("menu:videos", "Help &Videos").build(app)?)
@@ -321,10 +336,12 @@ fn build_menu(app: &AppHandle, doc: Option<DocMenuState>) -> tauri::Result<MenuH
 
     let edit_is_text = doc.is_some_and(|d| d.is_edit_mode);
     let edit_menu = if edit_is_text { &edit_text } else { &edit_card };
-    let menu = Menu::with_items(
-        app,
-        &[&file_menu as &dyn IsMenuItem<Wry>, edit_menu, &help_menu],
-    )?;
+    let mut menus: Vec<&dyn IsMenuItem<Wry>> = vec![&file_menu, edit_menu];
+    if doc.is_some() {
+        menus.push(&view_menu);
+    }
+    menus.push(&help_menu);
+    let menu = Menu::with_items(app, &menus)?;
     Ok(MenuHandles {
         menu,
         recent,
@@ -478,19 +495,22 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 let _ = win.close();
             }
         }
-        // Handled by the focused document's renderer. emit() would broadcast
-        // to every window.
         "menu:save" | "menu:saveas" | "menu:export" | "menu:undo" | "menu:cut" | "menu:copy"
-        | "menu:paste" | "menu:pasteinto" => {
-            if let Some(win) = focused_doc_window(app) {
-                let _ = win.emit_to(win.label(), "menu-clicked", id);
-            }
-        }
+        | "menu:paste" | "menu:pasteinto" => emit_to_focused_doc(app, id),
+        id if id.starts_with("theme:") => emit_to_focused_doc(app, id),
         _ => {
             if let Some(path) = id.strip_prefix("recent:") {
                 open_doc_off_main(app, Some(PathBuf::from(path)), true);
             }
         }
+    }
+}
+
+// For menu actions handled by the document's renderer. A plain emit() would
+// reach every window.
+fn emit_to_focused_doc(app: &AppHandle, id: &str) {
+    if let Some(win) = focused_doc_window(app) {
+        let _ = win.emit_to(win.label(), "menu-clicked", id);
     }
 }
 
