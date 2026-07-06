@@ -6,7 +6,7 @@
   "build": {
     "frontendDist": "../tauri-web",
     "beforeDevCommand": "bun run tauri:frontend",
-    "beforeBuildCommand": "bun run tauri:frontend"
+    "beforeBuildCommand": "bun run tauri:frontend -- --production"
   },
   "app": {
     "withGlobalTauri": false,
