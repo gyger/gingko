@@ -102,6 +102,12 @@ currentWindow.listen('menu-clicked', async (event) => {
     case 'menu:pasteinto':
       toElm('mod+shift+v', 'docMsgs', 'Keyboard')
       break
+
+    default:
+      if (event.payload.startsWith('theme:')) {
+        // Theme.decoder expects an object with a "theme" field.
+        toElm({ theme: event.payload.slice('theme:'.length) }, 'docMsgs', 'ThemeChanged')
+      }
   }
 })
 
@@ -184,6 +190,14 @@ const fromElm = (msg, elmData) => {
   const casesTauri = {
     Alert: () => {
       window.alert(elmData)
+    },
+
+    SaveThemeSetting: () => {
+      localStore.set('theme', elmData)
+    },
+
+    SaveUserSetting: () => {
+      localStore.set(elmData[0], elmData[1])
     },
 
     SetDirty: () => {
