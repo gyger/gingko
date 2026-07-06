@@ -120,36 +120,20 @@ init dataIn =
                     )
 
                 Just fileData ->
-                    case Coders.normalizeAndParse fileData of
-                        Ok parsedTrees ->
-                            let
-                                -- Files without <gingko-card> tags (e.g. plain
-                                -- markdown) parse to zero cards; load the whole
-                                -- content as a single card instead.
-                                loadedTree =
-                                    if List.isEmpty parsedTrees then
-                                        Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
+                    -- Unparseable content loads as a single card rather than
+                    -- an empty document: the file on disk is still this
+                    -- document's save target, so the first edit would
+                    -- otherwise overwrite it with nothing.
+                    ( Page.Doc.init False globalData
+                        |> setDocTree (parseFileData fileData)
+                        |> Page.Doc.setLoading False
+                    , if dataIn.isUntitled then
+                        UntitledFileDoc dataIn.filePath
 
-                                    else
-                                        Tree "0" "" (Children parsedTrees)
-                            in
-                            ( Page.Doc.init False globalData
-                                |> setDocTree loadedTree
-                                |> Page.Doc.setLoading False
-                            , if dataIn.isUntitled then
-                                UntitledFileDoc dataIn.filePath
-
-                              else
-                                FileDoc dataIn.filePath
-                            , Cmd.none
-                            )
-
-                        Err _ ->
-                            ( Page.Doc.init True globalData
-                                |> setDocTree newDocTree
-                            , UntitledFileDoc "parser error"
-                            , Task.attempt (always NoOp) (Browser.Dom.focus "card-edit-1")
-                            )
+                      else
+                        FileDoc dataIn.filePath
+                    , Cmd.none
+                    )
 
         maybeLocalSave ( m, c ) =
             if dataIn.isUntitled && dataIn.fileData /= Nothing then
@@ -180,6 +164,22 @@ setDocTree tree docModel =
     Page.Doc.setWorkingTree
         (TreeStructure.setTree tree (Page.Doc.getWorkingTree docModel))
         docModel
+
+
+-- Parse .gkw/.md file contents into a tree; content without
+-- <gingko-card> tags, or that fails to parse, becomes a single card.
+parseFileData : String -> Tree
+parseFileData fileData =
+    case Coders.normalizeAndParse fileData of
+        Ok parsedTrees ->
+            if List.isEmpty parsedTrees then
+                Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
+
+            else
+                Tree "0" "" (Children parsedTrees)
+
+        Err _ ->
+            Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
 
 
 
@@ -383,6 +383,27 @@ update msg ({ docModel } as model) =
 
                 ClickedExport ->
                     ( { model | uiState = ExportPreview ( ExportEverything, DOCX ) }, Cmd.none )
+
+                FileChangedOnDisk newContent ->
+                    let
+                        newTree =
+                            parseFileData newContent
+
+                        ( newDocModel, docCmd, _ ) =
+                            Page.Doc.setTree newTree docModel
+
+                        ( activatedDocModel, activateCmd ) =
+                            Page.Doc.maybeActivate newDocModel
+
+                        newGlobalData =
+                            Page.Doc.getGlobalData docModel
+                    in
+                    ( { model
+                        | docModel = Page.Doc.setDirty False activatedDocModel
+                        , lastSave = GlobalData.currentTime newGlobalData
+                      }
+                    , Cmd.map GotDocMsg (Cmd.batch [ docCmd, activateCmd ])
+                    )
 
                 Incoming.ThemeChanged themeValue ->
                     case Dec.decodeValue Page.Doc.Theme.decoder themeValue of
