@@ -431,7 +431,7 @@ update msg ({ docModel } as model) =
                 newIsOpen =
                     not model.shortcutTrayOpen
             in
-            ( { model | shortcutTrayOpen = newIsOpen }
+            ( { model | shortcutTrayOpen = newIsOpen, tooltip = Nothing }
             , send <| SaveUserSetting ( "shortcutTrayOpen", Enc.bool newIsOpen )
             )
 
