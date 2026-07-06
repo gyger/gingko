@@ -301,6 +301,23 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
             .build()?
     };
 
+    let view_menu = {
+        let mut theme_menu = SubmenuBuilder::new(app, "&Theme");
+        for (id, label) in [
+            ("theme:default", "Default"),
+            ("theme:classic", "Classic"),
+            ("theme:gray", "Gray"),
+            ("theme:green", "Green"),
+            ("theme:turquoise", "Turquoise"),
+            ("theme:dark", "Dark"),
+        ] {
+            theme_menu = theme_menu.item(&MenuItemBuilder::with_id(id, label).build(app)?);
+        }
+        SubmenuBuilder::new(app, "&View")
+            .item(&theme_menu.build()?)
+            .build()?
+    };
+
     let help_menu = SubmenuBuilder::new(app, "&Help")
         .item(&MenuItemBuilder::with_id("menu:shortcuts", "&Keyboard Shortcuts").build(app)?)
         .item(&MenuItemBuilder::with_id("menu:videos", "Help &Videos").build(app)?)
@@ -310,14 +327,26 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
         .item(&MenuItemBuilder::with_id("menu:devtools", "Toggle Developer Tools").build(app)?)
         .build()?;
 
-    let menu = Menu::with_items(
-        app,
-        &[
-            &file_menu as &dyn IsMenuItem<Wry>,
-            &edit_menu,
-            &help_menu,
-        ],
-    )?;
+    let menu = if ctx.has_doc {
+        Menu::with_items(
+            app,
+            &[
+                &file_menu as &dyn IsMenuItem<Wry>,
+                &edit_menu,
+                &view_menu,
+                &help_menu,
+            ],
+        )?
+    } else {
+        Menu::with_items(
+            app,
+            &[
+                &file_menu as &dyn IsMenuItem<Wry>,
+                &edit_menu,
+                &help_menu,
+            ],
+        )?
+    };
     Ok(menu)
 }
 
@@ -396,6 +425,11 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             open_doc_off_main(app, Some(PathBuf::from(path)), true);
         }
         // Forwarded to the focused document window's JS side.
+        id if id.starts_with("theme:") => {
+            if let Some(win) = focused_doc_window(app) {
+                let _ = win.emit("menu-clicked", id);
+            }
+        }
         "menu:save" | "menu:saveas" | "menu:export" | "menu:undo" | "menu:cut" | "menu:copy"
         | "menu:paste" | "menu:pasteinto" => {
             if let Some(win) = focused_doc_window(app) {
