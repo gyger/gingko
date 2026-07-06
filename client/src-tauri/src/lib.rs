@@ -24,6 +24,11 @@ struct DocState {
     // Initial file contents, consumed by get_doc_state on renderer boot.
     file_data: Option<String>,
     undo_data: HashMap<String, Value>,
+    // sha1 of the last content this app wrote (or loaded); used to tell
+    // external file modifications apart from our own saves.
+    last_saved_hash: Option<[u8; 20]>,
+    // Keeps the file watcher alive for the lifetime of the window.
+    watcher: Option<notify::RecommendedWatcher>,
 }
 
 #[derive(Default)]
@@ -199,6 +204,70 @@ fn load_undo_data(app: &AppHandle, file_path: &Path) -> HashMap<String, Value> {
 fn persist_undo_data(app: &AppHandle, file_path: &Path, data: &HashMap<String, Value>) {
     if let Ok(s) = serde_json::to_string(data) {
         let _ = fs::write(undo_store_path(app, file_path), s);
+    }
+}
+
+fn sha1_of(data: &[u8]) -> [u8; 20] {
+    let mut hasher = Sha1::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+// Watch the document's file for external modifications (e.g. an agent or
+// editor writing the .gkw on disk). Our own saves are filtered out by
+// comparing the content hash against last_saved_hash. On a real external
+// change, the new content is pushed to the window as a 'file-changed' event.
+fn start_watching(app: &AppHandle, label: &str) {
+    use notify::{EventKind, RecursiveMode, Watcher};
+
+    let (path, parent) = {
+        let state: State<AppState> = app.state();
+        let docs = state.docs.lock().unwrap();
+        let Some(doc) = docs.get(label) else { return };
+        let path = doc.file_path.clone();
+        let Some(parent) = path.parent().map(PathBuf::from) else { return };
+        (path, parent)
+    };
+
+    let app2 = app.clone();
+    let label2 = label.to_string();
+    let watch_path = path.clone();
+    let watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
+        let Ok(event) = res else { return };
+        if !matches!(event.kind, EventKind::Create(_) | EventKind::Modify(_)) {
+            return;
+        }
+        if !event.paths.iter().any(|p| p == &watch_path) {
+            return;
+        }
+        // Let in-progress writes settle before reading.
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let Ok(bytes) = fs::read(&watch_path) else { return };
+        let new_hash = sha1_of(&bytes);
+        {
+            let state: State<AppState> = app2.state();
+            let mut docs = state.docs.lock().unwrap();
+            let Some(doc) = docs.get_mut(&label2) else { return };
+            if doc.file_path != watch_path || doc.last_saved_hash == Some(new_hash) {
+                return;
+            }
+            doc.last_saved_hash = Some(new_hash);
+        }
+        if let Ok(content) = String::from_utf8(bytes) {
+            if let Some(win) = app2.get_webview_window(&label2) {
+                let _ = win.emit("file-changed", content);
+            }
+        }
+    });
+
+    if let Ok(mut w) = watcher {
+        if w.watch(&parent, RecursiveMode::NonRecursive).is_ok() {
+            let state: State<AppState> = app.state();
+            let mut docs = state.docs.lock().unwrap();
+            if let Some(doc) = docs.get_mut(label) {
+                doc.watcher = Some(w);
+            }
+        }
     }
 }
 
@@ -590,6 +659,7 @@ fn create_doc_window(
 
     {
         let mut docs = state.docs.lock().unwrap();
+        let last_saved_hash = file_data.as_ref().map(|d| sha1_of(d.as_bytes()));
         docs.insert(
             label.clone(),
             DocState {
@@ -597,6 +667,8 @@ fn create_doc_window(
                 is_untitled,
                 file_data,
                 undo_data,
+                last_saved_hash,
+                watcher: None,
             },
         );
     }
@@ -615,6 +687,8 @@ fn create_doc_window(
         .disable_drag_drop_handler()
         .build()
         .map_err(|e| e.to_string())?;
+
+    start_watching(app, &label);
 
     Ok(())
 }
@@ -745,10 +819,13 @@ fn save_file(
     state: State<AppState>,
     data: String,
 ) -> Result<(String, f64, bool), String> {
-    let docs = state.docs.lock().unwrap();
+    let mut docs = state.docs.lock().unwrap();
     let doc = docs
-        .get(window.label())
+        .get_mut(window.label())
         .ok_or_else(|| format!("No doc state for window {}", window.label()))?;
+
+    // Record the hash before writing, so the file watcher ignores this save.
+    doc.last_saved_hash = Some(sha1_of(data.as_bytes()));
 
     let swp = swp_path(&doc.file_path);
     fs::write(&swp, &data).map_err(|e| e.to_string())?;
@@ -800,6 +877,9 @@ fn save_as(
         orig_path
     };
     let _ = orig_path;
+
+    // The document path changed — watch the new location.
+    start_watching(&app, &label);
 
     add_to_recent_documents(&app, &new_path);
 
