@@ -182,6 +182,22 @@ setDocTree tree docModel =
         docModel
 
 
+-- Parse .gkw/.md file contents into a tree; content without
+-- <gingko-card> tags becomes a single card.
+parseFileData : String -> Tree
+parseFileData fileData =
+    case Coders.normalizeAndParse fileData of
+        Ok parsedTrees ->
+            if List.isEmpty parsedTrees then
+                Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
+
+            else
+                Tree "0" "" (Children parsedTrees)
+
+        Err _ ->
+            Tree "0" "" (Children [ Tree "1" fileData (Children []) ])
+
+
 
 -- UPDATE
 
@@ -383,6 +399,27 @@ update msg ({ docModel } as model) =
 
                 ClickedExport ->
                     ( { model | uiState = ExportPreview ( ExportEverything, DOCX ) }, Cmd.none )
+
+                FileChangedOnDisk newContent ->
+                    let
+                        newTree =
+                            parseFileData newContent
+
+                        ( newDocModel, docCmd, _ ) =
+                            Page.Doc.setTree newTree docModel
+
+                        ( activatedDocModel, activateCmd ) =
+                            Page.Doc.maybeActivate newDocModel
+
+                        newGlobalData =
+                            Page.Doc.getGlobalData docModel
+                    in
+                    ( { model
+                        | docModel = Page.Doc.setDirty False activatedDocModel
+                        , lastSave = GlobalData.currentTime newGlobalData
+                      }
+                    , Cmd.map GotDocMsg (Cmd.batch [ docCmd, activateCmd ])
+                    )
 
                 Incoming.ThemeChanged themeValue ->
                     case Dec.decodeValue Page.Doc.Theme.decoder themeValue of
