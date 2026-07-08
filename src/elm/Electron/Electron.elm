@@ -100,7 +100,7 @@ init dataIn =
 
         savedTrayOpen =
             Dec.decodeValue (Dec.field "shortcutTrayOpen" Dec.bool) dataIn.fileSettings
-                |> Result.withDefault True
+                |> Result.withDefault False
 
         undoData =
             Data.success dataIn.undoData Data.empty
