@@ -45,6 +45,7 @@ type alias Model =
     , data : Data.Model
     , fileState : FileState
     , lastSave : Time.Posix
+    , saveError : Maybe String
     , uiState : UIState
     , tooltip : Maybe ( Element, TooltipPosition, TranslationId )
     , theme : Theme
@@ -149,6 +150,7 @@ init dataIn =
       , data = undoData
       , fileState = initFileState
       , lastSave = GlobalData.currentTime globalData
+      , saveError = Nothing
       , uiState = DocUI
       , tooltip = Nothing
       , theme = savedTheme
@@ -355,10 +357,10 @@ update msg ({ docModel } as model) =
                                 |> Page.Doc.setGlobalData newGlobalData
                     in
                     if newPath /= oldPath then
-                        ( { model | fileState = FileDoc newPath, docModel = newDocModel, lastSave = savedTime }, Cmd.none )
+                        ( { model | fileState = FileDoc newPath, docModel = newDocModel, lastSave = savedTime, saveError = Nothing }, Cmd.none )
 
                     else
-                        ( { model | docModel = newDocModel, lastSave = savedTime }, Cmd.none )
+                        ( { model | docModel = newDocModel, lastSave = savedTime, saveError = Nothing }, Cmd.none )
 
                 DataSaved dataIn ->
                     let
@@ -380,6 +382,9 @@ update msg ({ docModel } as model) =
                       }
                     , Cmd.none
                     )
+
+                Incoming.SaveError err ->
+                    ( { model | saveError = Just err }, Cmd.none )
 
                 ClickedExport ->
                     ( { model | uiState = ExportPreview ( ExportEverything, DOCX ) }, Cmd.none )
@@ -404,6 +409,11 @@ update msg ({ docModel } as model) =
                       }
                     , Cmd.map GotDocMsg (Cmd.batch [ docCmd, activateCmd ])
                     )
+
+                Incoming.SaveRequested ->
+                    -- The desktop wrapper asks for a full write of the current
+                    -- document (e.g. after Save As), even if nothing changed.
+                    localSaveDo ( model, Cmd.none )
 
                 Incoming.ThemeChanged themeValue ->
                     case Dec.decodeValue Page.Doc.Theme.decoder themeValue of
@@ -625,6 +635,7 @@ view ({ docModel } as model) =
             , dirty = isDirty
             , isFullscreen = isFullscreen
             , lastSave = model.lastSave
+            , saveError = model.saveError
             , currentTime = GlobalData.currentTime globalData
             }
          ]
@@ -699,8 +710,8 @@ view ({ docModel } as model) =
     ]
 
 
-viewFileSaveIndicator : { language : Language, dirty : Bool, isFullscreen : Bool, lastSave : Time.Posix, currentTime : Time.Posix } -> Html msg
-viewFileSaveIndicator { language, dirty, isFullscreen, lastSave, currentTime } =
+viewFileSaveIndicator : { language : Language, dirty : Bool, isFullscreen : Bool, lastSave : Time.Posix, saveError : Maybe String, currentTime : Time.Posix } -> Html msg
+viewFileSaveIndicator { language, dirty, isFullscreen, lastSave, saveError, currentTime } =
     let
         lastSaveInWords =
             if abs (Time.posixToMillis lastSave - Time.posixToMillis currentTime) < 3000 then
@@ -709,18 +720,28 @@ viewFileSaveIndicator { language, dirty, isFullscreen, lastSave, currentTime } =
             else
                 timeDistInWords language lastSave currentTime
     in
-    div
-        [ id "file-save-indicator"
-        , classList [ ( "dirty", dirty ), ( "fullscreen", isFullscreen ) ]
-        , title lastSaveInWords
-        ]
-        [ text <|
-            if dirty then
-                "Unsaved changes..."
+    case saveError of
+        Just err ->
+            div
+                [ id "file-save-indicator"
+                , classList [ ( "save-error", True ), ( "fullscreen", isFullscreen ) ]
+                , title err
+                ]
+                [ text "Save failed! Changes NOT saved." ]
 
-            else
-                "All Changes Saved"
-        ]
+        Nothing ->
+            div
+                [ id "file-save-indicator"
+                , classList [ ( "dirty", dirty ), ( "fullscreen", isFullscreen ) ]
+                , title lastSaveInWords
+                ]
+                [ text <|
+                    if dirty then
+                        "Unsaved changes..."
+
+                    else
+                        "All Changes Saved"
+                ]
 
 
 
