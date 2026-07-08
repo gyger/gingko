@@ -25,7 +25,9 @@ type
     | ClickedOutsideCard
     | CheckboxClicked String Int
       -- === Desktop ===
+    | SaveRequested
     | SavedToFile String Time.Posix
+    | SaveError String
     | ClickedExport
     | DataSaved Dec.Value
     | ThemeChanged Dec.Value
@@ -169,10 +171,21 @@ subscribe tagger onError =
                             onError (errorToString e)
 
                 -- === Desktop ===
+                "SaveRequested" ->
+                    tagger <| SaveRequested
+
                 "SavedToFile" ->
                     case decodeValue (tupleDecoder Dec.string (Dec.map Time.millisToPosix <| Dec.int)) outsideInfo.data of
                         Ok ( path, timestamp ) ->
                             tagger <| SavedToFile path timestamp
+
+                        Err e ->
+                            onError (errorToString e)
+
+                "SaveError" ->
+                    case decodeValue Dec.string outsideInfo.data of
+                        Ok err ->
+                            tagger <| SaveError err
 
                         Err e ->
                             onError (errorToString e)
