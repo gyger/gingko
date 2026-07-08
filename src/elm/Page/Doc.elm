@@ -1008,6 +1008,9 @@ incoming incomingMsg model =
         SavedToFile _ _ ->
             ( model, Cmd.none, [] )
 
+        SaveError _ ->
+            ( model, Cmd.none, [] )
+
         ClickedExport ->
             ( model, Cmd.none, [] )
 
