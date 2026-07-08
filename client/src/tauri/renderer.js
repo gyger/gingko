@@ -134,10 +134,20 @@ listen('file-changed', (event) => {
 async function saveThisAs () {
   const newPath = await invoke('save_file_dialog')
   if (newPath) {
-    const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
-    DIRTY = false
-    isUntitled = untitled
-    toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
+    try {
+      const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
+      DIRTY = false
+      isUntitled = untitled
+      toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
+      // save_as only copies the document as it currently is on disk. An
+      // untitled document is only written when its content changes, so an
+      // untouched (or still-being-edited) one would land as an empty file.
+      // Ask Elm to write its current state to the new path.
+      toElm(null, 'docMsgs', 'SaveRequested')
+    } catch (e) {
+      console.error(e)
+      toElm(String(e), 'docMsgs', 'SaveError')
+    }
   }
 }
 
@@ -259,6 +269,7 @@ const fromElm = (msg, elmData) => {
         toElm([filePath, timestamp], 'docMsgs', 'SavedToFile')
       } catch (e) {
         console.error(e)
+        toElm(String(e), 'docMsgs', 'SaveError')
       }
     }
   }
