@@ -616,8 +616,12 @@ fn create_doc_window(
 
     let (file_path, file_data) = match file_path {
         None => {
-            // Initialize new document in temp
+            // Initialize new document in temp. Write the document file itself
+            // too, not just the swap copy: save_file only runs once content
+            // changes, so an untouched document (single empty card) would
+            // otherwise have no file for save_as to copy from.
             let fp = temp_dir().join(format!("Untitled-{}-{}.gkw", date_string, file_hash));
+            let _ = fs::write(&fp, "");
             let _ = fs::write(swp_path(&fp), "");
             (fp, init_file_data)
         }
