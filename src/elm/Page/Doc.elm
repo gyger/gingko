@@ -1005,6 +1005,9 @@ incoming incomingMsg model =
             )
 
         -- === Desktop (handled by the desktop wrapper, not here) ===
+        SaveRequested ->
+            ( model, Cmd.none, [] )
+
         SavedToFile _ _ ->
             ( model, Cmd.none, [] )
 

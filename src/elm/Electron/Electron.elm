@@ -426,6 +426,11 @@ update msg ({ docModel } as model) =
                     , Cmd.map GotDocMsg (Cmd.batch [ docCmd, activateCmd ])
                     )
 
+                Incoming.SaveRequested ->
+                    -- The desktop wrapper asks for a full write of the current
+                    -- document (e.g. after Save As), even if nothing changed.
+                    localSaveDo ( model, Cmd.none )
+
                 Incoming.ThemeChanged themeValue ->
                     case Dec.decodeValue Page.Doc.Theme.decoder themeValue of
                         Ok newTheme ->
