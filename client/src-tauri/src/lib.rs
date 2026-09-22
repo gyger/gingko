@@ -485,7 +485,12 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
             open_file_dialog(app);
         }
         "menu:exit" => {
-            app.exit(0);
+            // Close each window instead of exiting outright, so documents run
+            // their close handling (save prompt for untitled docs, pending
+            // saves, swap-file cleanup). The app exits once the last closes.
+            for win in app.webview_windows().values() {
+                let _ = win.close();
+            }
         }
         "menu:shortcuts" => open_modal_off_main(app, "shortcuts"),
         "menu:videos" => open_modal_off_main(app, "videos"),
@@ -880,6 +885,13 @@ fn save_as(
             .ok_or_else(|| format!("No doc state for window {}", label))?;
 
         let orig_path = doc.file_path.clone();
+
+        // Saving onto the current file: nothing to move. Copying a file onto
+        // itself can truncate it, and the undo/swap cleanup below would
+        // delete the history and swap file of the file we keep.
+        if same_file(&orig_path, &new_path) {
+            return Ok((orig_path.to_string_lossy().to_string(), now_ms(), doc.is_untitled));
+        }
 
         // Copy current contents to the new location (+ swap file).
         fs::copy(&orig_path, &new_path).map_err(|e| e.to_string())?;
