@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capabilities for all Gingko Writer windows",
-  "windows": ["*"],
+  "description": "Capabilities for the home and document windows",
+  "windows": ["home", "doc-*"],
   "permissions": [
     "core:default",
     "core:window:allow-set-title",
@@ -13,6 +13,25 @@
     "core:webview:allow-internal-toggle-devtools",
     "dialog:default",
     "opener:default",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    "allow-get-home-state",
+    "allow-new-document",
+    "allow-open-document",
+    "allow-open-document-dialog",
+    "allow-import-document",
+    "allow-remove-recent-document",
+    "allow-import-json-dialog",
+    "allow-get-doc-state",
+    "allow-save-file",
+    "allow-save-as",
+    "allow-commit-data",
+    "allow-local-store-set",
+    "allow-set-edit-mode",
+    "allow-export-file",
+    "allow-export-docx",
+    "allow-ask-save-changes",
+    "allow-save-file-dialog",
+    "allow-export-file-dialog",
+    "allow-close-document"
   ]
 }
