@@ -345,6 +345,258 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the ask_save_changes command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-ask-save-changes",
+          "markdownDescription": "Enables the ask_save_changes command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the close_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-close-document",
+          "markdownDescription": "Enables the close_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the commit_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-commit-data",
+          "markdownDescription": "Enables the commit_data command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the export_docx command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-export-docx",
+          "markdownDescription": "Enables the export_docx command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the export_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-export-file",
+          "markdownDescription": "Enables the export_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the export_file_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-export-file-dialog",
+          "markdownDescription": "Enables the export_file_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_doc_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-doc-state",
+          "markdownDescription": "Enables the get_doc_state command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_home_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-home-state",
+          "markdownDescription": "Enables the get_home_state command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the import_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-import-document",
+          "markdownDescription": "Enables the import_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the import_json_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-import-json-dialog",
+          "markdownDescription": "Enables the import_json_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the local_store_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-local-store-set",
+          "markdownDescription": "Enables the local_store_set command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the new_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-new-document",
+          "markdownDescription": "Enables the new_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-document",
+          "markdownDescription": "Enables the open_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_document_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-document-dialog",
+          "markdownDescription": "Enables the open_document_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_external command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-external",
+          "markdownDescription": "Enables the open_external command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_modal command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-modal",
+          "markdownDescription": "Enables the open_modal command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_recent_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-remove-recent-document",
+          "markdownDescription": "Enables the remove_recent_document command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_as command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-as",
+          "markdownDescription": "Enables the save_as command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-file",
+          "markdownDescription": "Enables the save_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_file_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-file-dialog",
+          "markdownDescription": "Enables the save_file_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the set_edit_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-set-edit-mode",
+          "markdownDescription": "Enables the set_edit_mode command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ask_save_changes command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-ask-save-changes",
+          "markdownDescription": "Denies the ask_save_changes command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the close_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-close-document",
+          "markdownDescription": "Denies the close_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the commit_data command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-commit-data",
+          "markdownDescription": "Denies the commit_data command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_docx command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-export-docx",
+          "markdownDescription": "Denies the export_docx command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-export-file",
+          "markdownDescription": "Denies the export_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_file_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-export-file-dialog",
+          "markdownDescription": "Denies the export_file_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_doc_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-doc-state",
+          "markdownDescription": "Denies the get_doc_state command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_home_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-home-state",
+          "markdownDescription": "Denies the get_home_state command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-import-document",
+          "markdownDescription": "Denies the import_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the import_json_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-import-json-dialog",
+          "markdownDescription": "Denies the import_json_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the local_store_set command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-local-store-set",
+          "markdownDescription": "Denies the local_store_set command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the new_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-new-document",
+          "markdownDescription": "Denies the new_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-document",
+          "markdownDescription": "Denies the open_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_document_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-document-dialog",
+          "markdownDescription": "Denies the open_document_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_external command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-external",
+          "markdownDescription": "Denies the open_external command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_modal command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-modal",
+          "markdownDescription": "Denies the open_modal command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_recent_document command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-remove-recent-document",
+          "markdownDescription": "Denies the remove_recent_document command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_as command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-as",
+          "markdownDescription": "Denies the save_as command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-file",
+          "markdownDescription": "Denies the save_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_file_dialog command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-file-dialog",
+          "markdownDescription": "Denies the save_file_dialog command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the set_edit_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-set-edit-mode",
+          "markdownDescription": "Denies the set_edit_mode command without any pre-configured scope."
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",
