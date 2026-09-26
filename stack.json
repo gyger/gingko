@@ -1,39 +1,35 @@
 {
   "version": 5,
-  "prev": "88bae003f9cb21d3aefa7bb02185c88cc27e8d91",
-  "head": "42d9a4b5ed66ce5f03897ef735b86cb8f14c52aa",
+  "prev": "2705e82bc9fec3c6a1609981f7838bfe7229531d",
+  "head": "7f99d5d02713bb3f6129ffdd6b93b1c2bef23739",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "legacy-gko-converter",
     "desktop-themes-and-shortcut-tray",
     "live-reload-on-disk-change",
-    "reliable-save",
-    "refresh-temp"
+    "reliable-save"
   ],
   "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
-      "oid": "a85ef278a44f817ef38b7d99505db196d2c6868a"
+      "oid": "d731483b058ab4140521a9d7db8741c64840e0ac"
     },
     "legacy-gko-converter": {
-      "oid": "2096657a290a0cc8d5d2d3baf748c0a828e1e34d"
+      "oid": "25d1f01156e38d934bc965e5c3fdbf367bd2f4ea"
     },
     "live-reload-on-disk-change": {
-      "oid": "0065f18ed8c70f0ba001f3352f646d0ac4c9d5de"
+      "oid": "077f6bd8fd66904861afb77f385ecfb352b2099b"
     },
     "overlay-workflow": {
-      "oid": "6d814b1ecd4482008fe9f1deef22d3ffdc731b8d"
-    },
-    "refresh-temp": {
-      "oid": "42d9a4b5ed66ce5f03897ef735b86cb8f14c52aa"
+      "oid": "e0b4b41b0b8c7a189bc1f8c9ee546c65efb82256"
     },
     "reliable-save": {
-      "oid": "65af2a27e0fdfef02a7071c5fe258bed43da08fd"
+      "oid": "7f99d5d02713bb3f6129ffdd6b93b1c2bef23739"
     },
     "tauri-desktop-app": {
-      "oid": "bd1caf0facdb3063acd39de5b982091b8a777c3e"
+      "oid": "3f09d36e9fbe2d7310546a6df72dd295250d7085"
     }
   }
 }
