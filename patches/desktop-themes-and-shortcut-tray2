@@ -1,0 +1,32 @@
+Bottom: 54446ae56fb6339774780a3e507ae748761fb52d
+Top:    7e903b50faa064e9fad22fe1609c3457014e7cfa
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:43:46 +0200
+
+Enable themes and the keyboard-shortcut tray in the desktop app
+
+Purpose:
+Bring two web-app features to the desktop wrapper: selectable themes
+and the keyboard-shortcut tray.
+
+Approach:
+- View > Theme native menu (Default/Classic/Gray/Green/Turquoise/Dark),
+  forwarded to Elm as a ThemeChanged Incoming message and applied via
+  the existing Page.Doc.Theme; persisted per file and restored on open.
+- Doc.UI.viewShortcuts tray, its open state persisted per file via
+  SaveUserSetting ("shortcutTrayOpen"), closed by default so new
+  documents don't open with the tray showing.
+- Desktop layout (desktop.css): the desktop has no header bar, so the
+  collapsed tray icon is pinned to the top edge (the web app's 40px
+  offset left it floating); the save indicator sits left of the toggle
+  icon and disappears behind the open tray panel (z-index). Toggling the
+  tray closes any open tooltip, as in the web app.
+
+Constraints:
+- Reuse the web app's theme and tray code; only the desktop wrapper and
+  desktop.css change their placement and persistence.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>
