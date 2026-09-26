@@ -1,7 +1,7 @@
 # Windows installer for the desktop app, built from the commit tagged
-# `build` (move the tag and push it: `git overlay-build`). Each run replaces
-# the release on that tag, so the download URL stays the same:
-#   https://github.com/<owner>/<repo>/releases/download/build/Gingko-Writer-Setup.exe
+# `build` (move the tag and push it: `git overlay-build`). The installer goes
+# to a draft release, which only people with write access can see; each run
+# replaces it. Download it from the repository's Releases page.
 name: Overlay Windows Build
 
 on:
@@ -58,12 +58,16 @@ jobs:
           bunx tauri build --bundles nsis
           cp src-tauri/target/release/bundle/nsis/*-setup.exe "$RUNNER_TEMP/Gingko-Writer-Setup.exe"
 
-      - name: Publish to the release on the build tag
+      # Releases on the build tag are looked up via the API: the by-tag
+      # lookup (gh release delete build) doesn't find drafts.
+      - name: Publish as a draft release on the build tag
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete build --yes || true
+          gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq '.[] | select(.tag_name == "build") | .id' |
+            xargs -r -I{} gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/{}"
           gh release create build "$RUNNER_TEMP/Gingko-Writer-Setup.exe" \
-            --verify-tag --prerelease \
+            --verify-tag --draft \
             --title "Gingko Writer for Windows (overlay build)" \
             --notes "Built from $GITHUB_SHA."
