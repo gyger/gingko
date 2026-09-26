@@ -5,7 +5,8 @@ app) on top of upstream [gingko/client](https://github.com/gingko/client).
 The changes are kept as a [StGit](https://stacked-git.github.io) patch stack
 so they can always be replayed onto the latest upstream `master`.
 
-This file is itself the first patch of the stack (`overlay-workflow`).
+This file and the helper scripts in `tools/` are the first patch of the
+stack (`overlay-workflow`).
 
 ## Branches
 
@@ -87,76 +88,152 @@ Upstream the patches that could be generally useful.
 If upstream merges an equivalent change, `stg rebase` reports the patch as
 empty; remove it with `stg delete`.
 
-## Publishing to GitHub (and restoring the stack elsewhere)
+Patch names are stable identities: other stacks, `stg sync` and agents refer
+to patches by name, so rename them only deliberately.
+
+## Sharing the stack through GitHub
 
 A plain `git push` / `git clone` only carries the `overlay` branch, i.e. the
 patches as ordinary commits. StGit's own metadata (patch names, which patches
 are applied, the stack's operation log) lives in a separate ref,
-`refs/stacks/overlay`, a commit containing `stack.json`. Sync it explicitly
-next to the branch; GitHub stores it like any other ref (it's just not shown
-in the web UI):
+`refs/stacks/overlay`, a commit containing `stack.json`. GitHub stores it
+like any other ref (it just isn't shown in the web UI), so the fork holds
+both, and anyone can recover the exact stack from it:
 
 ```text
 origin (gyger/gingko)
-├── refs/heads/overlay     ← the code: upstream master + patches as commits
+├── refs/heads/overlay     ← the code: upstream master + patches as commits,
+│                            usable by anyone who doesn't care about StGit
 └── refs/stacks/overlay    ← StGit metadata for that branch
 ```
 
-The per-patch refs `refs/patches/overlay/*` don't need syncing; StGit
-recreates them from `refs/stacks/overlay`.
+The per-patch refs `refs/patches/overlay/*` don't need sharing; StGit
+recreates them from `refs/stacks/overlay`. The branch history is what
+counts; the stack ref must always describe exactly that branch commit.
 
-### Push
+The git side lives in three scripts in `tools/`, because `.git/config`
+isn't versioned:
 
-```bash
-git push --force-with-lease origin overlay   # branch is rewritten by rebases
-git push origin refs/stacks/overlay          # no force needed, see below
-```
+| script | what it does |
+|--------|--------------|
+| `overlay-setup.sh` | one-time setup of a checkout: `upstream` remote, `master` tracking `upstream/master`, fetching stack refs, the `git overlay-adopt` / `git overlay-publish` aliases, and restoring the `overlay` stack |
+| `overlay-publish.sh [branch]` | push a branch and its stack ref in one atomic push (alias `git overlay-publish`) |
+| `overlay-adopt.sh <branch>` | make local `overlay` + stack an exact copy of `<branch>` + its stack on origin (alias `git overlay-adopt`) |
 
-Every StGit operation appends a commit to the stack ref, so its history is
-linear and a normal push fast-forwards. If that push is rejected, the stack
-was changed somewhere else in the meantime. Don't force it; fetch the
-remote stack and reconcile first.
-
-Optional alias for both steps:
-
-```bash
-git config alias.overlay-push '!git push --force-with-lease origin overlay && git push origin refs/stacks/overlay'
-```
-
-### Set up a new checkout
-
-Remotes, branches and the stack metadata; branch config such as
-`branch.overlay.*` is local git config and doesn't travel with the repo:
+### New checkout
 
 ```bash
 git clone -b overlay https://github.com/gyger/gingko.git gingko && cd gingko
-git branch --unset-upstream                  # overlay tracks nothing
-git remote add upstream https://github.com/gingko/client.git
-git fetch upstream master
-git branch --track master upstream/master
-git fetch origin refs/stacks/overlay:refs/stacks/overlay
-stg series                                   # should list the patches
+sh tools/overlay-setup.sh           # ends by listing the patches
 ```
 
-The stack ref and the branch have to belong together: the stack's recorded
-head must equal the `overlay` commit. They do as long as both were pushed
-together. If `stg` reports that the branch was modified outside StGit, run
-`stg repair`.
+Stack refs are fetched into `refs/remote-stacks/origin/*`, **not** straight
+into `refs/stacks/*`: fetching into `refs/stacks/*` would overwrite local
+stack state (unpushed StGit work) on every `git fetch`. Local stacks change
+only through `stg` or through `git overlay-adopt`, which refuses to drop
+local stack work that the incoming stack doesn't contain, and keeps the
+previous stack in `refs/stacks-backup/overlay`.
 
-To pick up stack changes pushed from another machine later (this discards
-local, unpushed work on `overlay`):
+### Publish
 
 ```bash
-git fetch origin
-git switch overlay && git reset --hard origin/overlay
-git fetch origin +refs/stacks/overlay:refs/stacks/overlay
-stg series
+git overlay-publish                 # = git push --atomic --force-with-lease=overlay origin overlay refs/stacks/overlay
 ```
 
-Deliberately **not** used: a permanent `fetch = +refs/stacks/*:refs/stacks/*`
-refspec on `origin`. It would force-overwrite the local stack metadata on
-every `git fetch`, even when you have unpushed StGit work, and leave it out
-of sync with the local `overlay` branch.
+The branch is rewritten by every rebase, so it needs a force push. The stack
+ref doesn't: every StGit operation appends a commit to it, so a normal push
+fast-forwards. That makes the stack ref the concurrency guard. If someone
+else changed the published stack in the meantime, the push is rejected, and
+thanks to `--atomic` the branch isn't updated either.
+
+### Pick up changes made elsewhere
+
+```bash
+git overlay-adopt overlay           # fetch, then reset overlay + stack to origin's
+```
+
+If `stg` ever reports that the branch was modified outside StGit (e.g. after
+a plain `git commit`), `stg repair` turns the extra commits into patches.
+
+## Collaborating: one canonical stack, work on topic stacks
+
+`overlay` is the one canonical stack. It changes only deliberately, one
+change at a time. Nobody edits it concurrently. People and agents work on
+their own StGit branches cloned from it and open a pull request into
+`overlay` for review and CI:
+
+```text
+upstream/master
+    └── overlay               canonical stack (branch + refs/stacks/overlay)
+          ├── sam-live-reload     topic stack: changes to some patches
+          ├── alice-export        topic stack
+          └── ai-rebase           an agent moving the stack to new upstream
+```
+
+Contributor:
+
+```bash
+git overlay-adopt overlay           # start from the current canonical stack
+stg branch --clone sam-live-reload  # own branch + stack, same patches
+# edit patches: stg goto / stg refresh / stg edit / stg new ...
+git overlay-publish sam-live-reload
+# open a PR on GitHub: sam-live-reload → overlay
+```
+
+Reviewers see the whole rewritten series in the PR. To review what changed
+per patch, compare the two series:
+
+```bash
+git range-diff origin/overlay...origin/sam-live-reload
+```
+
+**Don't land the PR with GitHub's merge button.** None of its three modes
+fits a patch stack:
+- *merge* adds a merge commit, and `stg repair` would then unapply every
+  patch below it;
+- *squash* collapses the series into one commit;
+- *rebase* replays the rewritten patches on top of the old ones.
+
+The maintainer lands it by adopting the topic stack, which makes `overlay`
+exactly the reviewed branch:
+
+```bash
+git overlay-adopt sam-live-reload   # checks it was cloned from the current overlay
+git overlay-publish                 # GitHub then shows the PR as merged
+git push origin --delete sam-live-reload refs/stacks/sam-live-reload   # clean up
+```
+
+If `overlay` moved on since the topic was cloned, adopting is refused.
+Bring the topic's changes over patch by patch instead, on a fresh clone of
+the current `overlay`:
+
+```bash
+git fetch origin +refs/stacks/sam-live-reload:refs/stacks/sam-live-reload
+git branch -f sam-live-reload origin/sam-live-reload   # local StGit view of the topic
+stg sync -B sam-live-reload live-reload-on-disk-change # 3-way merge, same-named patch
+```
+
+`stg sync` merges each named patch against the base the patch sits on, so a
+file that the patch itself adds always conflicts: take the topic's version
+(`git checkout --theirs <file>`, `git add`, `stg refresh`). Name the patches
+explicitly. `stg sync --all` failed here with "Entry … would be overwritten
+by merge" (StGit 2.6.1) once it reached a patch after an identical one.
+
+### Upstream updates by an agent
+
+The same shape works for an AI agent keeping the overlay current:
+
+```bash
+stg branch --clone ai-rebase
+git fetch upstream && stg rebase upstream/master
+```
+
+`stg rebase` stops at the first patch that no longer applies, so the task is
+always one patch at a time: *reapply `<patch>` to upstream `<commit>`,
+preserving its documented purpose and constraints; the implementation may
+change if upstream's architecture did.* The agent updates the patch
+description if the approach changed, verifies the build, publishes
+`ai-rebase` and opens a PR into `overlay`, which is landed as above.
 
 ### Plain patch files
 
