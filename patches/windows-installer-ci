@@ -30,3 +30,5 @@ Constraints:
 - Windows NSIS installer only; unsigned (SmartScreen warns on first run).
 - Doesn't touch upstream's workflows (web-deploy.yml runs only on
   master, on upstream's self-hosted runner).
+
+Notice: vibe-coded
