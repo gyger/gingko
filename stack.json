@@ -1,10 +1,12 @@
 {
   "version": 5,
-  "prev": "bdb40dbf5a945058442d759c8a3349aab854b7ec",
-  "head": "5580a5acea20dc84b758da68648683d405ce2726",
+  "prev": "dd1f1a802a419d2a587dd8616818f712f920b16c",
+  "head": "cde11df0567d7851e6f58b603817fe652d69bc8a",
   "applied": [
     "overlay-workflow",
-    "tauri-desktop-app",
+    "tauri-desktop-app"
+  ],
+  "unapplied": [
     "fix-empty-doc-windows",
     "tauri-production-build",
     "legacy-gko-converter",
@@ -21,7 +23,6 @@
     "load-unparseable-as-single-card",
     "tauri-linux-png-icons"
   ],
-  "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
