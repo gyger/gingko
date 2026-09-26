@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "4d335e72c804c2eeea8bd8fdb65a8308f4d20700",
-  "head": "f50dd83024c6f92f808d9687e5d8f34d6c4b25fc",
+  "prev": "b7e728cac1af824b1763f5f7e73cb5155191109b",
+  "head": "e3526cbd2821ac8ce02a3d4735e138fd9b967a84",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -14,22 +14,22 @@
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
-      "oid": "ef53a87f9fd51d27120925705ca69e968111fcb8"
+      "oid": "6dd3aceaa03f070ac092550e153bbd75a5134d32"
     },
     "legacy-gko-converter": {
-      "oid": "2276346338562f2e430f3d43a8a7ceccdd189969"
+      "oid": "4568867c678f0aa3f8e660ef877f33322632a6fa"
     },
     "live-reload-on-disk-change": {
-      "oid": "88d51fa65c9fa9c545d2b063c817fe33be185339"
+      "oid": "0e138f5557081b1e5f9cbce05c4e683e50b94b5f"
     },
     "overlay-workflow": {
       "oid": "11e749bf0640c911f7b38aa6173758c17b44a897"
     },
     "tauri-desktop-app": {
-      "oid": "ad7cb4fba64a75093c46b9b3de413909b08877c3"
+      "oid": "bc576d3e28b15a904cc81d2e28aaf3c29057f8f2"
     },
     "windows-installer-ci": {
-      "oid": "f50dd83024c6f92f808d9687e5d8f34d6c4b25fc"
+      "oid": "e3526cbd2821ac8ce02a3d4735e138fd9b967a84"
     }
   }
 }
