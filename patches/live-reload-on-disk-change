@@ -1,7 +1,7 @@
-Bottom: d74212933b56d4e6cfa5df0a19bde4c069b76135
-Top:    34ae5112c1db68ed15a66a544185284bb6941e4f
+Bottom: 3ad943968acbcc94023013d6e7f919cf792721ee
+Top:    954bc11f88d8baf735fe1bd63f5377045a1da110
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:05:20 +0200
+Date:   2026-09-26 11:05:30 +0200
 
 Live-reload documents when the .gkw file changes on disk
 

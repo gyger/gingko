@@ -1,7 +1,7 @@
-Bottom: 8c939157cce85345334f0cd8d7cf4400cff3d7c3
-Top:    7b34a8388333a8750f7a527c11ded65c65f96901
+Bottom: de52dc9b66a511081a60c2875546f8f4e81ab73c
+Top:    c33a71a0c97af2a6466204ce7d33a7660efc1bcd
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:05:20 +0200
+Date:   2026-09-26 11:05:30 +0200
 
 Build production frontend (--optimize, minified) in tauri release builds
 
