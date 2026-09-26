@@ -1,8 +1,0 @@
-Bottom: e131ed2e982c235da8dd5de47691df20ed44f4d4
-Top:    0a621b220b20d97571c1fd8c2d92aff0e686d00d
-Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:35:31 +0200
-
-Build production frontend (--optimize, minified) in tauri release builds
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
