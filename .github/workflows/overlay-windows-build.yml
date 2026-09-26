@@ -1,13 +1,12 @@
-# Windows installer for the desktop app, built from the overlay branch.
-# Each run replaces the single rolling release `overlay-build`, so the
-# download URL stays the same:
-#   https://github.com/<owner>/<repo>/releases/download/overlay-build/Gingko-Writer-Setup.exe
+# Windows installer for the desktop app, built from the commit tagged
+# `build` (move the tag and push it: `git overlay-build`). Each run replaces
+# the release on that tag, so the download URL stays the same:
+#   https://github.com/<owner>/<repo>/releases/download/build/Gingko-Writer-Setup.exe
 name: Overlay Windows Build
 
 on:
   push:
-    branches: [ overlay ]
-  workflow_dispatch:
+    tags: [ build ]
 
 concurrency:
   group: overlay-windows-build
@@ -59,12 +58,12 @@ jobs:
           bunx tauri build --bundles nsis
           cp src-tauri/target/release/bundle/nsis/*-setup.exe "$RUNNER_TEMP/Gingko-Writer-Setup.exe"
 
-      - name: Publish to the overlay-build release
+      - name: Publish to the release on the build tag
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete overlay-build --yes --cleanup-tag || true
-          gh release create overlay-build "$RUNNER_TEMP/Gingko-Writer-Setup.exe" \
-            --target "$GITHUB_SHA" --prerelease \
+          gh release delete build --yes || true
+          gh release create build "$RUNNER_TEMP/Gingko-Writer-Setup.exe" \
+            --verify-tag --prerelease \
             --title "Gingko Writer for Windows (overlay build)" \
-            --notes "Built from overlay at $GITHUB_SHA."
+            --notes "Built from $GITHUB_SHA."
