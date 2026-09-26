@@ -116,7 +116,7 @@ isn't versioned:
 
 | script | what it does |
 |--------|--------------|
-| `overlay-setup.sh` | one-time setup of a checkout: `upstream` remote, `master` tracking `upstream/master`, fetching stack refs, the `git overlay-adopt` / `git overlay-publish` aliases, and restoring the `overlay` stack |
+| `overlay-setup.sh` | one-time setup of a checkout: `upstream` remote, `master` tracking `upstream/master`, fetching stack refs, the `git overlay-adopt` / `git overlay-publish` / `git overlay-build` aliases, and restoring the `overlay` stack |
 | `overlay-publish.sh [branch]` | push a branch and its stack ref in one atomic push (alias `git overlay-publish`) |
 | `overlay-adopt.sh <branch>` | make local `overlay` + stack an exact copy of `<branch>` + its stack on origin (alias `git overlay-adopt`) |
 
@@ -148,16 +148,22 @@ thanks to `--atomic` the branch isn't updated either.
 
 ### Windows installer
 
-Every push to `overlay` on the fork (i.e. every `git overlay-publish`)
-builds the Windows installer on GitHub (patch `windows-installer-ci`,
-`.github/workflows/overlay-windows-build.yml`). There is no versioning:
-the build replaces the rolling prerelease `overlay-build`, so the latest
-installer is always at
+GitHub builds the Windows installer for the commit tagged `build` (patch
+`windows-installer-ci`, `.github/workflows/overlay-windows-build.yml`),
+and only then. To build the published overlay, move the tag and push it:
 
-    https://github.com/gyger/gingko/releases/download/overlay-build/Gingko-Writer-Setup.exe
+```bash
+git overlay-publish                 # the commit to build must be on origin
+git overlay-build                   # = git tag -f build overlay && git push -f origin refs/tags/build
+git overlay-build <commit>          # or build another commit
+```
 
-It can also be started by hand under Actions → Overlay Windows Build →
-Run workflow. Actions must be enabled for the fork.
+There is no versioning: each build replaces the release on the `build`
+tag, so the latest installer is always at
+
+    https://github.com/gyger/gingko/releases/download/build/Gingko-Writer-Setup.exe
+
+Actions must be enabled for the fork.
 
 ### Pick up changes made elsewhere
 
