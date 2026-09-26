@@ -1,7 +1,7 @@
 # taudesktop → upstream monorepo migration
 
-Status of this branch, and what still needs doing on a machine with the real
-toolchains. Written 2026-09-07.
+Status of this branch and what is left to do. Written 2026-09-07;
+compile/test results added 2026-09-26.
 
 ## What upstream did
 
@@ -69,26 +69,64 @@ correctly now that `src-tauri/` sits inside `client/`.
 - `client/package.json` kept the `tauri:*` scripts and both `@tauri-apps`
   deps; `client/README.md` kept the Tauri section.
 
-## NOT verified — do this first locally
+## Compiled and tested — 2026-09-26
 
-No Elm and no Rust toolchain existed in the environment where this merge was
-made, so **nothing was compiled**. The merge is textually coherent and
-arity-consistent, that's all.
+A later session (Linux container: Elm 0.19.1 from npm, bun 1.3.11,
+rustc/cargo 1.94.1, Ubuntu 24.04 with `libwebkit2gtk-4.1-dev` / `libgtk-3-dev`
+etc. from apt) compiled the merged tree at `bc85b92`. **No source changes were
+needed**; everything below passed on the merge as committed.
+
+| check | command (from `client/`) | result |
+|-------|--------------------------|--------|
+| Elm, all 6 desktop entry points | `ELM_HOME=elm-home/elm-stuff bun run tauri:frontend` | ✅ 46 modules, incl. merged `Page/Doc.elm` |
+| Tauri frontend, full pipeline | same (elm make → esbuild → tailwind) | ✅ `tauri-web/` produced |
+| Tauri frontend, production | `bun esbuild-tauri.mjs --production` (`elm make --optimize`) | ✅ (so no stray `Debug.*`) |
+| Web build (upstream's rewritten `elm-postprocess.mjs`) | `cp config-example.js config.js && bun run newbuild` | ✅ |
+| Elm unit tests | `npx elm-test@0.19.1-revision12 tests/DataTests.elm tests/ParserTests.elm` | ✅ 19/19 |
+| Rust type-check | `cargo check --locked` in `src-tauri/` | ✅ no warnings (see icon caveat) |
+| Rust debug build | `cargo build --locked` | ✅ links against WebKitGTK 2.52 |
+| Rust tests | `cargo test --locked` | ✅ 1/1 |
+
+Caveats, so nobody over-reads this table:
+
+- **Not run:** the app itself (`tauri dev` / launching the binary — no
+  display), `tauri build` bundling, the Playwright e2e suite (needs the built
+  `server/` sibling, below), and anything on Windows or macOS.
+- **Linux icon — pre-existing, not a merge issue.** On Linux,
+  `tauri::generate_context!()` panics with
+  `failed to open icon …/src-tauri/icons/icon.png`, because
+  `tauri.conf.json`'s `bundle.icon` lists only `../build/icon.ico` and
+  `../build/icon.icns` and Tauri falls back to `icons/icon.png` for the window
+  icon. `client/src-tauri/` is byte-identical to `taudesktop` (`822b261`), so
+  this fails the same way there. The Rust results above used a temporary
+  `icons/icon.png` (a copy of `build/sources/raster-image_256x256.png`), which
+  was not committed. Fix, when Linux matters: add a PNG to `bundle.icon`, or
+  generate the icon set with `bun tauri icon build/sources/raster-image_1024x1024.png`.
+- `src/tauri/support.js` requires `client/config.js`, so `tauri:frontend` also
+  needs `cp config-example.js config.js` first (this was already true on
+  `taudesktop`).
+
+Environment workarounds used (they don't affect the result, but you may need
+them in a similar sandbox):
+
+- `CYPRESS_INSTALL_BINARY=0 bun i`. The Cypress binary download was truncated
+  by the proxy. `bun i` still errors on one transitive GitHub-tarball dep
+  (`rBurgett/ttfinfo`), but everything the builds need gets installed.
+- GitHub zipball downloads were blocked, so `elm make` couldn't fetch
+  packages. The package cache (`elm-home/elm-stuff/0.19.1/packages/<author>/<pkg>/<version>/`)
+  was filled with `git clone --depth 1 --branch <version>` for every entry
+  in `elm.json`. That is the same source Elm would download; the registry
+  itself (package.elm-lang.org) was reachable.
+
+To reproduce on a normal dev machine:
 
 ```bash
 cd client
 bun i
+cp config-example.js config.js
 ELM_HOME=elm-home/elm-stuff bun run tauri:frontend   # elm make + esbuild + tailwind
 bun run tauri:dev                                    # cargo build + run the app
-```
-
-Then the web build, which is the path upstream actually changed
-(`elm-postprocess.mjs` was rewritten in `059b71b`):
-
-```bash
-cd client
-cp config-example.js config.js        # or config_decrypt.sh
-bun run newbuild
+bun run newbuild                                     # web build
 ```
 
 ## Then: the e2e suite needs a built server sibling
@@ -119,6 +157,7 @@ The Tauri app itself is unaffected — it is local-file-only and never talks to
   workflow under `client/.github/workflows/` will silently never run. The
   existing `client/.github/workflows/build.yml` is the old Electron
   release job and is currently inert.
+- **Linux window icon** — see the caveat under "Compiled and tested" above.
 - Decide what to do with `client/app/` and the Electron scripts in
   `client/package.json` now that the Tauri app supersedes them.
 
