@@ -31,14 +31,14 @@ struct DocState {
     undo_data: HashMap<String, Value>,
 }
 
-// The menu bar is built once and updated in place: replacing it (set_menu)
-// makes every window re-layout on Windows, which visibly jumps.
+// Every window has its own menu, updated in place. A menu shared by all
+// windows dies with the first one that closes (Windows destroys a window's
+// menu along with it), and replacing a window's menu bar makes it re-layout.
 struct MenuHandles {
     menu: Menu<Wry>,
     recent: Submenu<Wry>,
-    save: MenuItem<Wry>,
-    // Enabled while a document window has focus.
-    doc_items: Vec<MenuItem<Wry>>,
+    // Document windows only.
+    save: Option<MenuItem<Wry>>,
     // Text commands while a card is edited, card commands otherwise; one of
     // the two is in the menu bar at a time.
     edit_text: Submenu<Wry>,
@@ -46,13 +46,18 @@ struct MenuHandles {
     edit_is_text: bool,
 }
 
+#[derive(Clone, Copy)]
+struct DocMenuState {
+    is_untitled: bool,
+    is_edit_mode: bool,
+}
+
 #[derive(Default)]
 struct AppState {
     docs: Mutex<HashMap<String, DocState>>,
     doc_counter: Mutex<u32>,
-    menu: Mutex<Option<MenuHandles>>,
-    // The document window the menu currently reflects (the last focused one).
-    menu_doc: Mutex<Option<String>>,
+    // Menu handles per window label (home and document windows).
+    menus: Mutex<HashMap<String, MenuHandles>>,
     // Held while a document window is being opened, so that two concurrent
     // requests (e.g. a double-click in the home window) can't open the same
     // file twice.
@@ -112,7 +117,7 @@ fn set_recent_documents(app: &AppHandle, docs: &[RecentDoc]) {
     let mut settings = load_settings(app);
     settings["recentDocuments"] = serde_json::to_value(docs).unwrap_or(json!([]));
     save_settings(app, &settings);
-    refresh_recent_menu(app);
+    refresh_recent_menus(app);
 }
 
 fn add_to_recent_documents(app: &AppHandle, file_path: &Path) {
@@ -231,16 +236,9 @@ fn title_text(file_path: &Path) -> String {
 
 /* ==== Menu ==== */
 
-fn build_menu(app: &AppHandle) -> tauri::Result<MenuHandles> {
+fn build_menu(app: &AppHandle, doc: Option<DocMenuState>) -> tauri::Result<MenuHandles> {
     let recent = SubmenuBuilder::new(app, "Open &Recent").build()?;
-    let close = MenuItemBuilder::with_id("menu:close", "&Close").build(app)?;
-    let save = MenuItemBuilder::with_id("menu:save", "Save")
-        .accelerator("CmdOrCtrl+S")
-        .build(app)?;
-    let save_as = MenuItemBuilder::with_id("menu:saveas", "Save As...")
-        .accelerator("CmdOrCtrl+Shift+S")
-        .build(app)?;
-    let export = MenuItemBuilder::with_id("menu:export", "Export...").build(app)?;
+    fill_recent_menu(app, &recent)?;
 
     let mut file_menu = SubmenuBuilder::new(app, "&File")
         .item(
@@ -253,13 +251,27 @@ fn build_menu(app: &AppHandle) -> tauri::Result<MenuHandles> {
                 .accelerator("CmdOrCtrl+O")
                 .build(app)?,
         )
-        .item(&recent)
-        .item(&close)
-        .separator()
-        .item(&save)
-        .item(&save_as)
-        .separator()
-        .item(&export);
+        .item(&recent);
+
+    let mut save = None;
+    if let Some(doc) = doc {
+        let item = MenuItemBuilder::with_id("menu:save", "Save")
+            .accelerator("CmdOrCtrl+S")
+            .build(app)?;
+        set_save_state(&item, doc.is_untitled);
+        file_menu = file_menu
+            .item(&MenuItemBuilder::with_id("menu:close", "&Close").build(app)?)
+            .separator()
+            .item(&item)
+            .item(
+                &MenuItemBuilder::with_id("menu:saveas", "Save As...")
+                    .accelerator("CmdOrCtrl+Shift+S")
+                    .build(app)?,
+            )
+            .separator()
+            .item(&MenuItemBuilder::with_id("menu:export", "Export...").build(app)?);
+        save = Some(item);
+    }
 
     #[cfg(not(target_os = "macos"))]
     {
@@ -305,27 +317,25 @@ fn build_menu(app: &AppHandle) -> tauri::Result<MenuHandles> {
         .item(&MenuItemBuilder::with_id("menu:devtools", "Toggle Developer Tools").build(app)?)
         .build()?;
 
+    let edit_is_text = doc.is_some_and(|d| d.is_edit_mode);
+    let edit_menu = if edit_is_text { &edit_text } else { &edit_card };
     let menu = Menu::with_items(
         app,
-        &[&file_menu as &dyn IsMenuItem<Wry>, &edit_card, &help_menu],
+        &[&file_menu as &dyn IsMenuItem<Wry>, edit_menu, &help_menu],
     )?;
     Ok(MenuHandles {
         menu,
         recent,
         save,
-        doc_items: vec![close, save_as, export],
         edit_text,
         edit_card,
-        edit_is_text: false,
+        edit_is_text,
     })
 }
 
-fn init_menu(app: &AppHandle) -> tauri::Result<()> {
-    let handles = build_menu(app)?;
-    fill_recent_menu(app, &handles.recent)?;
-    app.set_menu(handles.menu.clone())?;
-    *app.state::<AppState>().menu.lock().unwrap() = Some(handles);
-    Ok(())
+fn set_save_state(save: &MenuItem<Wry>, is_untitled: bool) {
+    let _ = save.set_text(if is_untitled { "Save" } else { "Saved" });
+    let _ = save.set_enabled(is_untitled);
 }
 
 fn fill_recent_menu(app: &AppHandle, recent: &Submenu<Wry>) -> tauri::Result<()> {
@@ -342,50 +352,71 @@ fn fill_recent_menu(app: &AppHandle, recent: &Submenu<Wry>) -> tauri::Result<()>
     Ok(())
 }
 
-// Menu updates run on the main thread, which also handles focus changes, so
-// they never wait on each other.
-fn refresh_recent_menu(app: &AppHandle) {
+// Builds the menu for a new window and keeps its handles for later updates.
+// On macOS the menu bar is app-wide, so the new window's menu replaces it.
+fn window_with_menu<'a>(
+    app: &'a AppHandle,
+    builder: WebviewWindowBuilder<'a, Wry, AppHandle>,
+    label: &str,
+    doc: Option<DocMenuState>,
+) -> tauri::Result<WebviewWindowBuilder<'a, Wry, AppHandle>> {
+    let handles = build_menu(app, doc)?;
+    let menu = handles.menu.clone();
+    app.state::<AppState>()
+        .menus
+        .lock()
+        .unwrap()
+        .insert(label.to_string(), handles);
+    #[cfg(target_os = "macos")]
+    {
+        app.set_menu(menu)?;
+        Ok(builder)
+    }
+    #[cfg(not(target_os = "macos"))]
+    Ok(builder.menu(menu))
+}
+
+// Menu updates run on the main thread, like window events, so the two never
+// wait on each other.
+fn refresh_recent_menus(app: &AppHandle) {
     let app2 = app.clone();
     let _ = app.run_on_main_thread(move || {
-        if let Some(m) = app2.state::<AppState>().menu.lock().unwrap().as_ref() {
+        for m in app2.state::<AppState>().menus.lock().unwrap().values() {
             let _ = fill_recent_menu(&app2, &m.recent);
         }
     });
 }
 
-// Show the focused document's state in the menu, which all windows share.
-fn apply_menu(app: &AppHandle) {
+// Bring a document window's menu in line with its state.
+fn update_doc_menu(app: &AppHandle, label: &str) {
     let app2 = app.clone();
+    let label = label.to_string();
     let _ = app.run_on_main_thread(move || {
         let state: State<AppState> = app2.state();
-        let (has_doc, is_untitled, is_edit_mode) = {
-            let menu_doc = state.menu_doc.lock().unwrap();
-            let docs = state.docs.lock().unwrap();
-            match menu_doc.as_ref().and_then(|label| docs.get(label)) {
-                Some(doc) => (true, doc.is_untitled, doc.is_edit_mode),
-                None => (false, false, false),
-            }
+        let Some((is_untitled, is_edit_mode)) = state
+            .docs
+            .lock()
+            .unwrap()
+            .get(&label)
+            .map(|d| (d.is_untitled, d.is_edit_mode))
+        else {
+            return;
         };
-        let mut menu = state.menu.lock().unwrap();
-        let Some(m) = menu.as_mut() else { return };
-        for item in &m.doc_items {
-            let _ = item.set_enabled(has_doc);
+        let mut menus = state.menus.lock().unwrap();
+        let Some(m) = menus.get_mut(&label) else {
+            return;
+        };
+        if let Some(save) = &m.save {
+            set_save_state(save, is_untitled);
         }
-        let _ = m.save.set_text(if has_doc && !is_untitled {
-            "Saved"
-        } else {
-            "Save"
-        });
-        let _ = m.save.set_enabled(has_doc && is_untitled);
-        let want_text = has_doc && is_edit_mode;
-        if m.edit_is_text != want_text {
-            let (old, new) = if want_text {
+        if m.edit_is_text != is_edit_mode {
+            let (old, new) = if is_edit_mode {
                 (&m.edit_card, &m.edit_text)
             } else {
                 (&m.edit_text, &m.edit_card)
             };
             if m.menu.remove(old).is_ok() && m.menu.insert(new, 1).is_ok() {
-                m.edit_is_text = want_text;
+                m.edit_is_text = is_edit_mode;
             }
         }
     });
@@ -596,14 +627,16 @@ fn create_doc_window(
         },
     );
 
-    *state.menu_doc.lock().unwrap() = Some(label.clone());
-    apply_menu(app);
-
-    WebviewWindowBuilder::new(app, &label, WebviewUrl::App("renderer.html".into()))
+    let builder = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("renderer.html".into()))
         .title(title_text(&file_path))
         .inner_size(800.0, 600.0)
-        .disable_drag_drop_handler()
-        .build()
+        .disable_drag_drop_handler();
+    let doc_menu = DocMenuState {
+        is_untitled,
+        is_edit_mode: is_untitled,
+    };
+    window_with_menu(app, builder, &label, Some(doc_menu))
+        .and_then(|builder| builder.build())
         .map_err(|e| e.to_string())?;
 
     Ok(())
@@ -614,10 +647,6 @@ fn cleanup_doc_window(app: &AppHandle, label: &str) {
     let doc = state.docs.lock().unwrap().remove(label);
     if let Some(doc) = doc {
         let _ = fs::remove_file(swp_path(&doc.file_path));
-    }
-    let mut menu_doc = state.menu_doc.lock().unwrap();
-    if menu_doc.as_deref() == Some(label) {
-        *menu_doc = None;
     }
 }
 
@@ -785,8 +814,7 @@ fn save_as(
     }
 
     add_to_recent_documents(&app, &new_path);
-
-    apply_menu(&app);
+    update_doc_menu(&app, window.label());
 
     let _ = window.set_title(&title_text(&new_path));
     Ok((new_path.to_string_lossy().to_string(), now_ms(), false))
@@ -854,7 +882,7 @@ fn set_edit_mode(
             _ => return,
         }
     }
-    apply_menu(&app);
+    update_doc_menu(&app, window.label());
 }
 
 #[tauri::command(async)]
@@ -1005,15 +1033,10 @@ fn close_document(window: WebviewWindow) {
 /* ==== App setup ==== */
 
 fn create_home_window(app: &AppHandle) {
-    {
-        let state: State<AppState> = app.state();
-        *state.menu_doc.lock().unwrap() = None;
-    }
-    apply_menu(app);
-    let _ = WebviewWindowBuilder::new(app, "home", WebviewUrl::App("home.html".into()))
+    let builder = WebviewWindowBuilder::new(app, "home", WebviewUrl::App("home.html".into()))
         .title("Gingko Writer - Home")
-        .inner_size(800.0, 600.0)
-        .build();
+        .inner_size(800.0, 600.0);
+    let _ = window_with_menu(app, builder, "home", None).and_then(|builder| builder.build());
 }
 
 fn path_argument(args: &[String]) -> Option<PathBuf> {
@@ -1063,31 +1086,24 @@ pub fn run() {
         ])
         .on_menu_event(|app, event| handle_menu_event(app, event.id().as_ref()))
         .on_window_event(|window, event| match event {
-            // The menu is shared by all windows; show the focused document's
-            // state in it. Modal windows leave it as it is.
+            #[cfg(target_os = "macos")]
             tauri::WindowEvent::Focused(true) => {
-                let doc = match window.label() {
-                    "home" => None,
-                    label if label.starts_with("doc-") => Some(label.to_string()),
-                    _ => return,
-                };
                 let state: State<AppState> = window.state();
-                let changed = {
-                    let mut menu_doc = state.menu_doc.lock().unwrap();
-                    std::mem::replace(&mut *menu_doc, doc.clone()) != doc
-                };
-                if changed {
-                    apply_menu(window.app_handle());
+                if let Some(m) = state.menus.lock().unwrap().get(window.label()) {
+                    let _ = window.app_handle().set_menu(m.menu.clone());
                 }
             }
-            tauri::WindowEvent::Destroyed if window.label().starts_with("doc-") => {
-                cleanup_doc_window(window.app_handle(), window.label());
+            tauri::WindowEvent::Destroyed => {
+                let state: State<AppState> = window.state();
+                state.menus.lock().unwrap().remove(window.label());
+                if window.label().starts_with("doc-") {
+                    cleanup_doc_window(window.app_handle(), window.label());
+                }
             }
             _ => {}
         })
         .setup(|app| {
             let handle = app.handle();
-            init_menu(handle)?;
             let args: Vec<String> = std::env::args().collect();
             if let Some(path) = path_argument(&args) {
                 let _ = create_doc_window(handle, Some(path), None);
