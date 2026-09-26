@@ -3,4 +3,33 @@ Top:    5075fe6c22c550c7139420d0651dcf3e253f1727
 Author: Samuel Gyger <samuel@gyger.tech>
 Date:   2026-09-26 18:33:53 +0200
 
-tmp
+Build the Windows installer on GitHub for every overlay push
+
+Purpose:
+Always have an installable Windows build of the current overlay without
+building locally: every push to `overlay` (git overlay-publish) builds
+the NSIS installer and publishes it at a fixed URL.
+
+Approach:
+- .github/workflows/overlay-windows-build.yml at the repo root (only root
+  workflows run in the monorepo), on windows-latest, for pushes to
+  `overlay` and manual runs.
+- No versioning: one rolling prerelease, tag `overlay-build`. Each run
+  deletes it (and the tag) and recreates it at the built commit, with
+  the installer as Gingko-Writer-Setup.exe, so the download link
+  releases/download/overlay-build/Gingko-Writer-Setup.exe never changes.
+- `bun install --ignore-scripts` skips the Electron download and
+  node-pty's native build, which only the web/Electron tooling needs;
+  Elm 0.19.1 is therefore fetched as a standalone binary (ELM_BINARY)
+  instead of via the npm package's install script.
+- Rust (Swatinem/rust-cache) and Elm packages (elm-home) are cached; a
+  newer push cancels a running build.
+
+Constraints:
+- Windows NSIS installer only; unsigned (SmartScreen warns on first run).
+- Doesn't touch upstream's workflows (web-deploy.yml runs only on
+  master, on upstream's self-hosted runner).
+
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>
