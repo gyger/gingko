@@ -872,6 +872,10 @@ fn save_as(
             undo_store_path(&app, &new_path),
         );
         let _ = fs::remove_file(swp_path(orig_path));
+        // An untitled document now lives at new_path; drop its temp file.
+        if doc.is_untitled {
+            let _ = fs::remove_file(orig_path);
+        }
 
         doc.file_path = new_path.clone();
         doc.is_untitled = false;
