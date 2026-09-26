@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "387ada5491650eeb57c4999c5211df764834ab4b",
-  "head": "66e02db1b478fab1d5932f25e95da840d46fbbd2",
+  "prev": "6b360b3273ceb6e0a5c3b45561fb5025e72428fb",
+  "head": "67e388eec8e367248301fd86d6bd7bc790997781",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -19,65 +19,61 @@
     "restrict-backend-commands",
     "fix-save-as-self-and-exit",
     "load-unparseable-as-single-card",
-    "tauri-linux-png-icons",
-    "refresh-temp"
+    "tauri-linux-png-icons"
   ],
   "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
-      "oid": "6a647319d08caa9b5c2ede5bb9a0b80255251fa5"
+      "oid": "c6ad2f415c491083c7b55e32fbd23eea48335b26"
     },
     "fix-empty-doc-windows": {
-      "oid": "69f73764fd86a02364eede937acdd5975e68f3c9"
+      "oid": "edabf6de9c7ec61bcf3f71c0f8b677d529d20e99"
     },
     "fix-save-as-self-and-exit": {
-      "oid": "7caa301da4ad72a1fbd72c6dd3c2261fb9315b03"
+      "oid": "8361ab58c6c03fa3c79dd1156a6ae7e668f1a4a8"
     },
     "fix-save-as-untitled": {
-      "oid": "d18d4bf8f3f4592c9235b603b879c9ebcaa5db2c"
+      "oid": "7a14dda130a294e39434dd57335faf1e89ab93a1"
     },
     "focus-already-open-window": {
-      "oid": "338137452c2f317c6c4ae4ec44fc88dac5a9accf"
+      "oid": "5a3e09f6e7285a15a40612080fd1b65a5fdec410"
     },
     "legacy-gko-converter": {
-      "oid": "57c909a36ebd54e50673585b397fb20e822dc378"
+      "oid": "83c3c47c3ed55426856c4427757620cb72ea177f"
     },
     "live-reload-on-disk-change": {
-      "oid": "519451ebff290bf5c940c3064d68eaa77ceaf057"
+      "oid": "ae83c6b4c85f27652e21e5aea11d5cb71c9d4dcf"
     },
     "load-unparseable-as-single-card": {
-      "oid": "2e71f7af8e8baffdaad714c70a1b35c23093ed78"
+      "oid": "b7dcc384086c43e5cad752372c42894caa37f24d"
     },
     "overlay-workflow": {
-      "oid": "84cf29350ab862bc14d2b55e5ab5c29c5dfe583f"
+      "oid": "655c7eef257fb0906968721ab8f10ad708f40ae1"
     },
     "polish-shortcut-tray": {
-      "oid": "52f1fe73605707a3a0c43b50eaecd4993242c3f5"
-    },
-    "refresh-temp": {
-      "oid": "66e02db1b478fab1d5932f25e95da840d46fbbd2"
+      "oid": "d91578fe751f67971a340e7bcd90e4977bca0c8e"
     },
     "restrict-backend-commands": {
-      "oid": "0fd845ad96390340f0b854cd34a8a17499c6ce88"
+      "oid": "7bc3ffc51fdd918c91a44d12502a383d6cd82fdc"
     },
     "save-as-writes-current-content": {
-      "oid": "ac3a6c1e0b82618d9b2008b51e7baec21eb728a0"
+      "oid": "6a05df31b02b7b50a52a5d7e215e5012678e6a60"
     },
     "shortcut-tray-default-closed": {
-      "oid": "3621b3a38366f60857379fb3c19cf2b758b8d1e3"
+      "oid": "7444e04d6bfcf6ae55f4f0c838a47cc143a94a64"
     },
     "show-save-failures": {
-      "oid": "6f51b4f67bd82734b4ca9e264057e3111894b790"
+      "oid": "ad0252f70d190852bb8ff040f1006d7ac75f7748"
     },
     "tauri-desktop-app": {
-      "oid": "f749fcf7e87dd3b2d4133b1f1ff333167a56be58"
+      "oid": "ee61689fbacf85ceb25536cd9057accf2f22a7aa"
     },
     "tauri-linux-png-icons": {
-      "oid": "43ebae5b23968e45293bf12d402213924d944c50"
+      "oid": "67e388eec8e367248301fd86d6bd7bc790997781"
     },
     "tauri-production-build": {
-      "oid": "14ed982d8a39b799a972b6509aa9fb93fa631247"
+      "oid": "5bd324ad6d4b295e29c71f8a66a43e3a7b04631e"
     }
   }
 }

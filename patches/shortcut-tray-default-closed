@@ -1,7 +1,7 @@
-Bottom: 358c9ab7a665347d5356d4eca3afa6ef06face03
-Top:    f7f477c8881d88da50c52afc8fdbd804c0245cd1
+Bottom: f2f35ad4652a4689494a89a35e0d104da319afb3
+Top:    929aa7fc54b8acb2338ef7121bb6913ec285b9cd
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:02:01 +0200
+Date:   2026-09-26 11:02:14 +0200
 
 Default the shortcut tray to closed for new documents
 
