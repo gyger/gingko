@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "beec10f4de7f8f4a72c37cc62f88c22a2936fe1c",
-  "head": "db86c3b5c9fd61c0001076245de88eb0845c3bb8",
+  "prev": "d7551cdd98f48905ac3dc143a5c43c3489ada7a2",
+  "head": "4650d6767a16a6ceb82b6f51cfdb81cec1048d58",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -16,13 +16,12 @@
     "shortcut-tray-default-closed",
     "save-as-writes-current-content",
     "focus-already-open-window",
-    "restrict-backend-commands"
-  ],
-  "unapplied": [
+    "restrict-backend-commands",
     "fix-save-as-self-and-exit",
     "load-unparseable-as-single-card",
     "tauri-linux-png-icons"
   ],
+  "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
@@ -32,7 +31,7 @@
       "oid": "ae85bf60ddf7a64f9d82b966e4331be6e0db77c9"
     },
     "fix-save-as-self-and-exit": {
-      "oid": "8361638296d7758d56ef0a8b8e4788edaa81f571"
+      "oid": "d02d6b3f4aa0de7180a39e896af3f9ff8c6a5fdb"
     },
     "fix-save-as-untitled": {
       "oid": "f5a5ceff6321e368273cb3a9bc05033cbccc7078"
@@ -47,7 +46,7 @@
       "oid": "090f091696f362f84ce4b1ae70074952cbb36345"
     },
     "load-unparseable-as-single-card": {
-      "oid": "ea140a066ac7678d04e21748455151f99d27d592"
+      "oid": "e16967aa1e7f00ae71e6e02547f846ad0c62e7c3"
     },
     "overlay-workflow": {
       "oid": "4b204a347c46ec85455767a87a7ebbd35feb9118"
@@ -71,7 +70,7 @@
       "oid": "5d188828f7f74d0edead0643aa824d9931f06d62"
     },
     "tauri-linux-png-icons": {
-      "oid": "5580a5acea20dc84b758da68648683d405ce2726"
+      "oid": "4650d6767a16a6ceb82b6f51cfdb81cec1048d58"
     },
     "tauri-production-build": {
       "oid": "b79b65d66bed1654672be13a3af7f6bf7c646029"
