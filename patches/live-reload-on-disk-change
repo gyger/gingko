@@ -12,9 +12,12 @@ open window follow, without losing the user's own unsaved edits.
 Approach:
 - Rust watches each open document's file with notify and tells
   external modifications apart from the app's own saves by content
-  hash. External changes reach the renderer as a 'file-changed' event
-  and Elm as FileChangedOnDisk, which re-parses and swaps the working
-  tree.
+  hash. The watcher reads the file under the lock save_file writes
+  under, so an own save is never seen half-written or with a stale
+  hash. Watchers are dropped outside that lock (on macOS dropping one
+  waits for its callback). External changes reach that window as a
+  'file-changed' event and Elm as FileChangedOnDisk, which re-parses
+  and swaps the working tree.
 - If the document has unsaved edits (or a card is being edited), the
   user is asked before reloading.
 - Parsing goes through one parseFileData fallback, used both for live

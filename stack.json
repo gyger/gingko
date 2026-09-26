@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "afc0947a075a93a29ca774c8518b9ada4a38eb04",
-  "head": "037d22fb9c96180aead4438f08e5427bcadfc64c",
+  "prev": "4a20975b0316e9114abe74df7f8933577dcfcb58",
+  "head": "f9c9ef45a35df394290d52a69e5cc45949c0ac1e",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -20,13 +20,13 @@
       "oid": "9f5ef3fcda4ade5a8fb345645a6662492ff73205"
     },
     "live-reload-on-disk-change": {
-      "oid": "3be2130567d0088bb56d522a91580e83c00cc9b2"
+      "oid": "4ee726316effd77b9e738ce967add2e135a084a7"
     },
     "overlay-workflow": {
       "oid": "92d1cacd6f868beb37dd12bd26b9635599860db3"
     },
     "reliable-save": {
-      "oid": "037d22fb9c96180aead4438f08e5427bcadfc64c"
+      "oid": "f9c9ef45a35df394290d52a69e5cc45949c0ac1e"
     },
     "tauri-desktop-app": {
       "oid": "d2823889c7bdbada39fb81eb157cdc3f18a7ac5e"
