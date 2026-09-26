@@ -1,7 +1,7 @@
 Bottom: 438329e64bef9442073caf50c0b49cae14f882da
 Top:    79a2ad3ea34b821eef0f2b65059366b651054ed7
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:02:25 +0200
+Date:   2026-09-26 19:05:25 +0200
 
 Document the StGit overlay workflow and add its helper scripts
 
@@ -32,3 +32,5 @@ Constraints:
   the stack.
 - Never fetch stack refs directly into refs/stacks/*; local stack state
   changes only through stg or overlay-adopt.sh.
+
+Notice: vibe-coded
