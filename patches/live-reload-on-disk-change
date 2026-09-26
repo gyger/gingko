@@ -1,7 +1,7 @@
 Bottom: 7803cab1a310d48c9cf4d8bf7ee286cfcb3a0a5b
 Top:    943aa7fb641a91afd882908646533c717082687f
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:27:00 +0200
+Date:   2026-09-26 11:31:28 +0200
 
 Live-reload documents when the .gkw file changes on disk
 
