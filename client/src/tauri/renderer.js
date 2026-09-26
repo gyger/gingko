@@ -114,25 +114,29 @@ document.addEventListener('focusout', (e) => {
   if (e.target.nodeName === 'TEXTAREA') { invoke('set_edit_mode', { isEditMode: false }) }
 })
 
+// Has Elm write the document as it stands (including the card being edited)
+// and resolves with whether that write succeeded.
+function requestSave () {
+  const saved = new Promise((resolve) => saveWaiters.push(resolve))
+  toElm(null, 'docMsgs', 'SaveRequested')
+  return saved
+}
+
 async function saveThisAs () {
   const newPath = await invoke('save_file_dialog')
-  if (newPath) {
-    try {
-      const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
-      DIRTY = false
-      isUntitled = untitled
-      toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
-      // save_as copies the file as last saved; have Elm write the document
-      // as it stands (e.g. the card being edited), and wait for that write
-      // so that closing the window right after can't cut it off.
-      const saved = new Promise((resolve) => saveWaiters.push(resolve))
-      toElm(null, 'docMsgs', 'SaveRequested')
-      await saved
-    } catch (e) {
-      console.error(e)
-      toElm(String(e), 'docMsgs', 'SaveError')
-    }
+  if (!newPath) { return false }
+  try {
+    const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
+    DIRTY = false
+    isUntitled = untitled
+    toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
+  } catch (e) {
+    console.error(e)
+    toElm(String(e), 'docMsgs', 'SaveError')
+    return false
   }
+  // save_as copies the file as last saved; write the current content too.
+  return requestSave()
 }
 
 /* ==== Window close handling ==== */
@@ -149,20 +153,20 @@ currentWindow.onCloseRequested(async (event) => {
         break
 
       case 'save':
-        await saveThisAs()
-        if (!isUntitled) {
+        if (await saveThisAs()) {
           closing = true
           await invoke('close_document')
         }
         break
     }
   } else if (DIRTY) {
-    // A local save is triggered on every change; give it a moment to land.
+    // Close once the latest changes are written; if that fails, stay open
+    // with the error in the save indicator.
     event.preventDefault()
-    setTimeout(async () => {
+    if (await requestSave()) {
       closing = true
       await invoke('close_document')
-    }, 200)
+    }
   }
   // Otherwise: let the close proceed; the backend cleans up on Destroyed.
 })
@@ -240,6 +244,7 @@ const fromElm = (msg, elmData) => {
     SaveToFile: async () => {
       const waiters = saveWaiters
       saveWaiters = []
+      let ok = true
       try {
         const [filePath, timestamp, untitled] = await invoke('save_file', { data: elmData[1] })
         DIRTY = false
@@ -248,8 +253,9 @@ const fromElm = (msg, elmData) => {
       } catch (e) {
         console.error(e)
         toElm(String(e), 'docMsgs', 'SaveError')
+        ok = false
       }
-      waiters.forEach((resolve) => resolve())
+      waiters.forEach((resolve) => resolve(ok))
     }
   }
 

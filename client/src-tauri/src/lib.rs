@@ -14,7 +14,9 @@ use tauri::menu::{IsMenuItem, Menu, MenuItemBuilder, PredefinedMenuItem, Submenu
 use tauri::{
     AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Wry,
 };
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{
+    DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult,
+};
 
 /* ==== State ==== */
 
@@ -863,16 +865,18 @@ fn export_docx(app: AppHandle, path: String, content: String) -> Result<(), Stri
 
 // Three-button "Save changes?" dialog. Returns "save" | "discard" | "cancel".
 #[tauri::command(async)]
-fn ask_save_changes() -> String {
-    let answer = rfd::MessageDialog::new()
-        .set_title("Save changes?")
-        .set_description("Do you want to save your changes?")
-        .set_buttons(rfd::MessageButtons::YesNoCancel)
-        .set_level(rfd::MessageLevel::Warning)
-        .show();
+fn ask_save_changes(window: WebviewWindow) -> String {
+    let answer = window
+        .dialog()
+        .message("Do you want to save your changes?")
+        .title("Save changes?")
+        .kind(MessageDialogKind::Warning)
+        .buttons(MessageDialogButtons::YesNoCancel)
+        .parent(&window)
+        .blocking_show_with_result();
     match answer {
-        rfd::MessageDialogResult::Yes => "save".into(),
-        rfd::MessageDialogResult::No => "discard".into(),
+        MessageDialogResult::Yes => "save".into(),
+        MessageDialogResult::No => "discard".into(),
         _ => "cancel".into(),
     }
 }
