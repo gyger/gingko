@@ -1,7 +1,7 @@
 Bottom: aa5f19591c8b4b5f06f8ad40281e57af51bc7a07
-Top:    efdf59cd3ade1ca9ae82e0f79790ed6629316629
+Top:    8306c1574c6a8afbc31e04e8c978d19352842576
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 12:58:58 +0200
+Date:   2026-09-26 13:00:21 +0200
 
 Reimplement the desktop app with Tauri 2, reusing the web app's Elm code
 

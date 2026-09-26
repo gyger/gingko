@@ -1,11 +1,10 @@
 {
   "version": 5,
-  "prev": "1fe22cb51eb05b70472a3e863f515b087808d95c",
-  "head": "1b1cce8aac41054a2ad72dca560d4ff0d026e52d",
+  "prev": "32003c7f1ebba7170a6a9b255d177d9bdfb72cf5",
+  "head": "1cb3f99bdcc209325c263982eb142d10eda35509",
   "applied": [
     "overlay-workflow",
-    "desktop-core",
-    "refresh-temp"
+    "desktop-core"
   ],
   "unapplied": [
     "legacy-gko-converter",
@@ -15,7 +14,7 @@
   "hidden": [],
   "patches": {
     "desktop-core": {
-      "oid": "3c5992e6aef0c1b7f9bc003ca6d617e36814eb0f"
+      "oid": "1cb3f99bdcc209325c263982eb142d10eda35509"
     },
     "desktop-themes-and-shortcut-tray": {
       "oid": "72292f33b360c15f43afa246f790f98937a50475"
@@ -28,9 +27,6 @@
     },
     "overlay-workflow": {
       "oid": "92d1cacd6f868beb37dd12bd26b9635599860db3"
-    },
-    "refresh-temp": {
-      "oid": "1b1cce8aac41054a2ad72dca560d4ff0d026e52d"
     }
   }
 }
