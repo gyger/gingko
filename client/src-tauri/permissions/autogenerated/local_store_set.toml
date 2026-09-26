@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-local-store-set"
+description = "Enables the local_store_set command without any pre-configured scope."
+commands.allow = ["local_store_set"]
+
+[[permission]]
+identifier = "deny-local-store-set"
+description = "Denies the local_store_set command without any pre-configured scope."
+commands.deny = ["local_store_set"]
