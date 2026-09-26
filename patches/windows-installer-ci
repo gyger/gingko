@@ -8,17 +8,17 @@ Build the Windows installer on GitHub for the commit tagged `build`
 Purpose:
 Get an installable Windows build without building locally, for exactly
 the commits that should be built: pushing the tag `build` (moved with
-`git overlay-build`) builds the NSIS installer and publishes it at a
-fixed URL.
+`git overlay-build`) builds the NSIS installer and attaches it to a
+draft release that only the fork's owner (write access) can see.
 
 Approach:
 - .github/workflows/overlay-windows-build.yml at the repo root (only root
   workflows run in the monorepo), on windows-latest, triggered by pushes
   of the tag `build`.
-- No versioning: one prerelease on the `build` tag. Each run deletes it
-  (keeping the tag) and recreates it with the installer as
-  Gingko-Writer-Setup.exe, so the download link
-  releases/download/build/Gingko-Writer-Setup.exe never changes.
+- No versioning: one draft release on the `build` tag. Each run deletes
+  the releases on that tag (via the API, since the by-tag lookup doesn't
+  find drafts; the tag stays) and recreates the draft with the installer
+  as Gingko-Writer-Setup.exe.
 - `bun install --ignore-scripts` skips the Electron download and
   node-pty's native build, which only the web/Electron tooling needs;
   Elm 0.19.1 is therefore fetched as a standalone binary (ELM_BINARY)
@@ -28,6 +28,8 @@ Approach:
 
 Constraints:
 - Windows NSIS installer only; unsigned (SmartScreen warns on first run).
+- The installer is not public: drafts are hidden from everyone without
+  write access. (The fork's code and the Actions logs are public.)
 - Doesn't touch upstream's workflows (web-deploy.yml runs only on
   master, on upstream's self-hosted runner).
 
