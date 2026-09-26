@@ -18,7 +18,14 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": ["../build/icon.ico", "../build/icon.icns"],
+    "icon": [
+      "../build/sources/raster-image_256x256.png",
+      "../build/sources/raster-image_32x32.png",
+      "../build/sources/raster-image_128x128.png",
+      "../build/sources/raster-image_512x512.png",
+      "../build/icon.ico",
+      "../build/icon.icns"
+    ],
     "category": "Productivity",
     "fileAssociations": [
       {
