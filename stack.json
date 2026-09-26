@@ -1,15 +1,14 @@
 {
   "version": 5,
-  "prev": "ef561fb56cb7d64d460832b7e84d98bf3bb9f5ee",
-  "head": "ac4f85a7f1387aeb5e292abd4c5852288df83845",
+  "prev": "0ce5b01daa8ee47083f37de237f404611489c00b",
+  "head": "92cb4b0a0e65103aed39d8f0e65e8a490f5dd97b",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "legacy-gko-converter",
     "desktop-themes-and-shortcut-tray",
     "live-reload-on-disk-change",
-    "windows-installer-ci",
-    "refresh-temp"
+    "windows-installer-ci"
   ],
   "unapplied": [],
   "hidden": [],
@@ -26,14 +25,11 @@
     "overlay-workflow": {
       "oid": "11e749bf0640c911f7b38aa6173758c17b44a897"
     },
-    "refresh-temp": {
-      "oid": "ac4f85a7f1387aeb5e292abd4c5852288df83845"
-    },
     "tauri-desktop-app": {
       "oid": "bc576d3e28b15a904cc81d2e28aaf3c29057f8f2"
     },
     "windows-installer-ci": {
-      "oid": "6f861b5f2d1595d4bfd57a9d9a4d58830b8a9eed"
+      "oid": "92cb4b0a0e65103aed39d8f0e65e8a490f5dd97b"
     }
   }
 }
