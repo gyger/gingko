@@ -1,7 +1,7 @@
 Bottom: 79a2ad3ea34b821eef0f2b65059366b651054ed7
 Top:    a516bc83bba7b6ad48631f07ded67d88ea617fbe
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:02:25 +0200
+Date:   2026-09-26 19:02:26 +0200
 
 Reimplement the desktop app with Tauri 2, reusing the web app's Elm code
 
@@ -90,8 +90,4 @@ Rebase notes (monorepo layout, upstream since 2026-09):
   pins LF so the generated permissions/*.toml files don't show as modified
   after a build on core.autocrlf checkouts.
 
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Generated with AI
-
-Co-Authored-By: AI <ai@example.com>
