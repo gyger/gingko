@@ -1,7 +1,7 @@
 Bottom: 064b75c981915ac26a16bf5b9bf23423968ae36c
 Top:    feba870e0a7edbf708aee164ec5ed1c60f91de45
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:00:47 +0200
+Date:   2026-09-26 11:02:01 +0200
 
 Fix Save As onto the current file and make Exit close windows
 

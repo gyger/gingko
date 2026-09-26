@@ -1,7 +1,7 @@
 Bottom: 86e21ec2f5995838bbf6f9bdf1346adf36557998
 Top:    3d42fbb5260284be1db4df60de66c46c246d31d6
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:00:45 +0200
+Date:   2026-09-26 11:02:01 +0200
 
 Reimplement desktop app with Tauri 2, reusing master's Elm codebase
 
@@ -24,5 +24,13 @@ Elm changes to bring the desktop targets up to master's shared modules:
 - Restore SavedToFile/ClickedExport/DataSaved in Page.Doc.Incoming
 - Restore viewFullscreenButtonsDesktop in Doc.Fullscreen
 - Expose UI.Header.viewExportMenu; fix ShortcutsModal viewShortcuts arity
+
+Rebase notes (monorepo layout, upstream since 2026-09):
+- All files live under client/. The Tauri usage docs are a section at
+  the end of the root README.md, because upstream merged client/README.md
+  into it.
+- client/bun.lockb: take upstream's version, then regenerate it with
+  `bun install --lockfile-only` in client/ so it includes @tauri-apps/api
+  and @tauri-apps/cli again.
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
