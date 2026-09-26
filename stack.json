@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "474a3ea461a2ea26b8fd3fc8040f39d0b84ac7cd",
-  "head": "9ceaf8bd214a700028eda1444ffff27b6991edbe",
+  "prev": "4cefdc9b2b581f11acb74a34002296ef9a6c4875",
+  "head": "e3d859cb36407905eeb2c1a7ea999f1d0221d344",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -19,7 +19,8 @@
     "restrict-backend-commands",
     "fix-save-as-self-and-exit",
     "load-unparseable-as-single-card",
-    "tauri-linux-png-icons"
+    "tauri-linux-png-icons",
+    "refresh-temp"
   ],
   "unapplied": [],
   "hidden": [],
@@ -53,6 +54,9 @@
     },
     "polish-shortcut-tray": {
       "oid": "94911046e4b957e7d6e815ea49a2f92acb6cb171"
+    },
+    "refresh-temp": {
+      "oid": "e3d859cb36407905eeb2c1a7ea999f1d0221d344"
     },
     "restrict-backend-commands": {
       "oid": "221241c01b8ab6c6367c45fc8bb90171d499372b"
