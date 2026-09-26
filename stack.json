@@ -1,10 +1,11 @@
 {
   "version": 5,
-  "prev": "dd1f1a802a419d2a587dd8616818f712f920b16c",
-  "head": "cde11df0567d7851e6f58b603817fe652d69bc8a",
+  "prev": "2bd5e252d3f8c87582d056dae7d32833599b21bb",
+  "head": "009a4d1699babeeea1239cc61908884043aa9c73",
   "applied": [
     "overlay-workflow",
-    "tauri-desktop-app"
+    "tauri-desktop-app",
+    "refresh-temp"
   ],
   "unapplied": [
     "fix-empty-doc-windows",
@@ -54,6 +55,9 @@
     },
     "polish-shortcut-tray": {
       "oid": "22143ecd96a5a4dda89a4cbb14020b03a01fe941"
+    },
+    "refresh-temp": {
+      "oid": "009a4d1699babeeea1239cc61908884043aa9c73"
     },
     "restrict-backend-commands": {
       "oid": "48383b485cccb4cfdaa8b45ea2a89e67dc5bc38c"
