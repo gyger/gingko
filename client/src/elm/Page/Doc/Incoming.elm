@@ -3,6 +3,7 @@ port module Page.Doc.Incoming exposing (Msg(..), subscribe)
 import Coders exposing (..)
 import File exposing (File)
 import Json.Decode as Dec exposing (Decoder, decodeValue, errorToString, field)
+import Time
 import Types exposing (Children(..), Collaborator, CursorPosition(..), OutsideData, TextCursorInfo, Tree)
 
 
@@ -23,6 +24,12 @@ type
     | TextCursor TextCursorInfo
     | ClickedOutsideCard
     | CheckboxClicked String Int
+      -- === Desktop ===
+    | SaveRequested
+    | SavedToFile String Time.Posix
+    | SaveError String
+    | ClickedExport
+    | DataSaved Dec.Value
       -- === UI ===
     | Keyboard String
       -- === Misc ===
@@ -160,6 +167,32 @@ subscribe tagger onError =
 
                         Err e ->
                             onError (errorToString e)
+
+                -- === Desktop ===
+                "SaveRequested" ->
+                    tagger <| SaveRequested
+
+                "SavedToFile" ->
+                    case decodeValue (tupleDecoder Dec.string (Dec.map Time.millisToPosix <| Dec.int)) outsideInfo.data of
+                        Ok ( path, timestamp ) ->
+                            tagger <| SavedToFile path timestamp
+
+                        Err e ->
+                            onError (errorToString e)
+
+                "SaveError" ->
+                    case decodeValue Dec.string outsideInfo.data of
+                        Ok err ->
+                            tagger <| SaveError err
+
+                        Err e ->
+                            onError (errorToString e)
+
+                "ClickedExport" ->
+                    tagger <| ClickedExport
+
+                "DataSaved" ->
+                    tagger <| DataSaved outsideInfo.data
 
                 -- === UI ===
                 "Keyboard" ->
