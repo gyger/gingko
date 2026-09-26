@@ -1,7 +1,7 @@
-Bottom: e65237c798aab56804b812d1fc6820900cfbf43f
-Top:    4216424714e7ee3b4d2a26fbaf0952bf6f3049ae
+Bottom: 2736faee1d15d38c9ba41e901a2040d3e1778b60
+Top:    b7670f0bb69e95281089d852fabee887dcbd8654
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:02:14 +0200
+Date:   2026-09-26 11:05:20 +0200
 
 Enable themes and keyboard-shortcut tray in the Tauri desktop app
 

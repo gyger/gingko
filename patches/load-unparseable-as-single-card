@@ -1,7 +1,7 @@
-Bottom: 1f4e17ebe1f2190a4ea6ac5b30dd836954179c1d
-Top:    e0cbcd5e202f8a5f792d0399a340e1cfeebbaf0e
+Bottom: 2e52024508a3cf4d57ee162bd40688ef36353f2c
+Top:    d84965dd944d8be490b119b46c8135d40b7f6c10
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:02:14 +0200
+Date:   2026-09-26 11:05:20 +0200
 
 Load unparseable files as a single card instead of an empty document
 

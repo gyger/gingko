@@ -1,7 +1,7 @@
-Bottom: 0a62cbc6c28a2a55010c729e7f50ff742aa4d9dc
-Top:    488e024971e60dfb71820872615ec88087b0c427
+Bottom: ec0e1a48daa540bed0f9e68a3d37cc49a09a4a06
+Top:    8c939157cce85345334f0cd8d7cf4400cff3d7c3
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:02:14 +0200
+Date:   2026-09-26 11:05:20 +0200
 
 Fix empty document windows opened from the home screen
 

@@ -1,7 +1,7 @@
-Bottom: 2aaa56e23e8e9d0fa5e8e77f05c0e9d6579e1259
-Top:    f2f35ad4652a4689494a89a35e0d104da319afb3
+Bottom: 45b35295c342ba98422b7dacbe6326c517215266
+Top:    d4002781608e5395b3c69aed23f6ece98ed7c167
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:02:14 +0200
+Date:   2026-09-26 11:05:20 +0200
 
 Show save failures in the top save indicator
 
