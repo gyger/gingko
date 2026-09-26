@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-import-json-dialog"
+description = "Enables the import_json_dialog command without any pre-configured scope."
+commands.allow = ["import_json_dialog"]
+
+[[permission]]
+identifier = "deny-import-json-dialog"
+description = "Denies the import_json_dialog command without any pre-configured scope."
+commands.deny = ["import_json_dialog"]

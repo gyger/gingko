@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-export-file-dialog"
+description = "Enables the export_file_dialog command without any pre-configured scope."
+commands.allow = ["export_file_dialog"]
+
+[[permission]]
+identifier = "deny-export-file-dialog"
+description = "Denies the export_file_dialog command without any pre-configured scope."
+commands.deny = ["export_file_dialog"]

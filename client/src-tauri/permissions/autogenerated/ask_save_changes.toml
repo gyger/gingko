@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ask-save-changes"
+description = "Enables the ask_save_changes command without any pre-configured scope."
+commands.allow = ["ask_save_changes"]
+
+[[permission]]
+identifier = "deny-ask-save-changes"
+description = "Denies the ask_save_changes command without any pre-configured scope."
+commands.deny = ["ask_save_changes"]

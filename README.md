@@ -70,3 +70,45 @@ Now visit http://localhost:3000 to use your local Gingko Writer install.
 
 - Client end-to-end (Playwright): `cd client && bun run test`
 - Server unit tests (Jest): `cd server && npm test`
+
+---
+
+## Desktop App (Tauri)
+
+This checkout carries a reimplementation of the desktop app using [Tauri 2](https://tauri.app)
+(replacing the Electron implementation in `client/src/electron/`), see [OVERLAY.md](./OVERLAY.md).
+It reuses the same Elm apps (`client/src/elm/Electron/`) and works on local `.gkw`/`.gko` files,
+with no server required.
+
+### Prerequisites
+
+- [Rust](https://rustup.rs) (stable toolchain)
+- [Elm 0.19.1](https://guide.elm-lang.org/install/elm.html) on your PATH (or set `ELM_BINARY`)
+- [Bun](https://bun.sh)
+- Platform WebView dependencies, see [Tauri prerequisites](https://tauri.app/start/prerequisites/)
+- `cp config-example.js config.js` in `client/` (only used for the support-contact form)
+
+### Development
+
+```
+cd client
+bun i
+bun run tauri:dev
+```
+
+### Build installers
+
+```
+cd client
+bun run tauri:build
+```
+
+Structure (all under `client/`):
+
+- `src-tauri/` — Rust backend: window/menu management, file I/O with swap files and
+  temp backups, per-document undo history (JSON stores under the app data dir),
+  recent-documents list, txt/json export, docx export via pandoc.
+- `src/tauri/` — JS glue between the Elm apps and the Tauri backend
+  (port of `src/electron/renderer.js`, `home.js`, and the modals).
+- `esbuild-tauri.mjs` — builds Elm + JS + static assets into `tauri-web/`,
+  which Tauri serves as its frontend.

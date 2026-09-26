@@ -1033,6 +1033,22 @@ incoming incomingMsg model =
             , []
             )
 
+        -- === Desktop (handled by the desktop wrapper, not here) ===
+        SaveRequested ->
+            ( model, Cmd.none, [] )
+
+        SavedToFile _ _ ->
+            ( model, Cmd.none, [] )
+
+        SaveError _ ->
+            ( model, Cmd.none, [] )
+
+        ClickedExport ->
+            ( model, Cmd.none, [] )
+
+        DataSaved _ ->
+            ( model, Cmd.none, [] )
+
         -- === INTEGRATION TEST HOOKS ===
         TestTextImportLoaded _ ->
             ( model, Cmd.none, [] )

@@ -1,4 +1,4 @@
-module UI.Header exposing (HeaderMenuState(..), viewHeader)
+module UI.Header exposing (HeaderMenuState(..), viewExportMenu, viewHeader)
 
 import Ant.Icons.Svg as AntIcons
 import Doc.Data as Data

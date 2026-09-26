@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "support-modal",
+  "description": "The support form only needs to close its own window after sending",
+  "windows": ["modal-support"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close"
+  ]
+}
