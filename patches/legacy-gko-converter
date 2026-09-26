@@ -1,17 +1,29 @@
 Bottom: 54179a023d2e736fea8524ac4bbf7244dc82778c
 Top:    54446ae56fb6339774780a3e507ae748761fb52d
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:43:36 +0200
+Date:   2026-09-26 11:44:21 +0200
 
 Add converter for legacy Gingko Desktop 2.x .gko archives
 
-Old .gko files are 7z archives containing a PouchDB/leveldb database of
-git-like commit/tree/ref objects. On open, detect the 7z signature and
-offer conversion: extract with sevenz-rust2, read the leveldb with
-rusty-leveldb, walk the head commit's tree, and emit <gingko-card>
-markdown (mirroring Coders.treeToMarkdownOutline). The converted
-document opens as Untitled, leaving the original file unmodified.
+Purpose:
+Let users of the old Gingko Desktop 2.x open their .gko files in the
+new desktop app.
 
-Includes a unit test against a sanitized 2.x archive (tests/historic).
+Approach:
+- Old .gko files are 7z archives containing a PouchDB/leveldb database
+  of git-like commit/tree/ref objects. On open, detect the 7z signature
+  and offer conversion.
+- Extract with sevenz-rust2, read the leveldb with rusty-leveldb, walk
+  the head commit's tree, and emit <gingko-card> markdown (mirroring
+  Coders.treeToMarkdownOutline).
+- Unit test against a sanitized 2.x archive (client/tests/historic/).
+
+Constraints:
+- Never modify the original file: the converted document opens as a new
+  Untitled document.
+- Current-format .gko/.gkw files take the normal open path.
 
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>
