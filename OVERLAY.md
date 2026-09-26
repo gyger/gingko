@@ -199,23 +199,27 @@ exactly the reviewed branch:
 
 ```bash
 git overlay-adopt sam-live-reload   # checks it was cloned from the current overlay
-git overlay-publish                 # GitHub then shows the PR as merged
+git overlay-publish                 # overlay now contains the PR head, so GitHub should mark the PR merged
 git push origin --delete sam-live-reload refs/stacks/sam-live-reload   # clean up
 ```
 
 If `overlay` moved on since the topic was cloned, adopting is refused.
-Bring the topic's changes over patch by patch instead, on a fresh clone of
-the current `overlay`:
+Bring the topic's changes over patch by patch instead, on the current
+`overlay`:
 
 ```bash
+git overlay-adopt overlay                              # current canonical stack
 git fetch origin +refs/stacks/sam-live-reload:refs/stacks/sam-live-reload
-git branch -f sam-live-reload origin/sam-live-reload   # local StGit view of the topic
+git branch -f --no-track sam-live-reload origin/sam-live-reload   # local StGit view of the topic
 stg sync -B sam-live-reload live-reload-on-disk-change # 3-way merge, same-named patch
+git overlay-publish
 ```
 
 `stg sync` merges each named patch against the base the patch sits on, so a
 file that the patch itself adds always conflicts: take the topic's version
-(`git checkout --theirs <file>`, `git add`, `stg refresh`). Name the patches
+(`git checkout --theirs <file>`, `git add`, `stg refresh`). Only patch
+content is synced, not descriptions; carry a changed description over with
+`stg edit`. Name the patches
 explicitly. `stg sync --all` failed here with "Entry … would be overwritten
 by merge" (StGit 2.6.1) once it reached a patch after an identical one.
 
