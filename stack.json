@@ -1,14 +1,13 @@
 {
   "version": 5,
-  "prev": "6f96bd7f74d5ff7f150c41e1566868de8bdabfef",
-  "head": "297537bfbf45450034ef9a51fb0ba6a5aa05341c",
+  "prev": "b4f81cbd49882d67e1fecbfab762662a100e1ed2",
+  "head": "29828818d166e668bc81691b31fa940527eaf07f",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "fix-empty-doc-windows",
     "tauri-production-build",
-    "focus-already-open-window",
-    "refresh-temp"
+    "focus-already-open-window"
   ],
   "unapplied": [
     "legacy-gko-converter",
@@ -39,7 +38,7 @@
       "oid": "39bf06d88cfecdbdb3b3283b67b60828de06c448"
     },
     "focus-already-open-window": {
-      "oid": "82e3dcbfac249f58bba8d58e85e3f130f1ef26fb"
+      "oid": "29828818d166e668bc81691b31fa940527eaf07f"
     },
     "legacy-gko-converter": {
       "oid": "bad7291838c5af03ec0983bbb4bd09ccaefc386b"
@@ -55,9 +54,6 @@
     },
     "polish-shortcut-tray": {
       "oid": "fd7c52c602022cade308948b28eabb56e44e33cc"
-    },
-    "refresh-temp": {
-      "oid": "297537bfbf45450034ef9a51fb0ba6a5aa05341c"
     },
     "restrict-backend-commands": {
       "oid": "84abc24e83364589a0426d6afa7fb09305973a27"

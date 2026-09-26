@@ -1,7 +1,7 @@
 Bottom: 0a621b220b20d97571c1fd8c2d92aff0e686d00d
-Top:    0a621b220b20d97571c1fd8c2d92aff0e686d00d
+Top:    b4d3c87c75949d85eb40783b89aa89ad587bf9a2
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:42:50 +0200
+Date:   2026-09-26 11:43:16 +0200
 
 Focus the existing window when a file is already open
 
