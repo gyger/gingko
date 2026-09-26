@@ -1,7 +1,7 @@
 Bottom: 35bf2feff41659ad84223ce48c22ec071d866dcd
 Top:    2e191bbabbe0e0f4cddea2e9783f11645222f7bb
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:05:27 +0200
+Date:   2026-09-26 19:05:28 +0200
 
 Enable themes and the keyboard-shortcut tray in the desktop app
 
@@ -26,3 +26,5 @@ Approach:
 Constraints:
 - Reuse the web app's theme and tray code; only the desktop wrapper and
   desktop.css change their placement and persistence.
+
+Notice: vibe-coded
