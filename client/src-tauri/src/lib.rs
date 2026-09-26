@@ -21,6 +21,7 @@ use tauri_plugin_dialog::DialogExt;
 struct DocState {
     file_path: PathBuf,
     is_untitled: bool,
+    is_edit_mode: bool,
     // Initial file contents, consumed by get_doc_state on renderer boot.
     file_data: Option<String>,
     undo_data: HashMap<String, Value>,
@@ -37,7 +38,8 @@ struct MenuContext {
 struct AppState {
     docs: Mutex<HashMap<String, DocState>>,
     doc_counter: Mutex<u32>,
-    menu_ctx: Mutex<MenuContext>,
+    // The document window the menu currently reflects (the last focused one).
+    menu_doc: Mutex<Option<String>>,
     // Held while a document window is being opened, so that two concurrent
     // requests (e.g. a double-click in the home window) can't open the same
     // file twice.
@@ -322,7 +324,18 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
 
 fn apply_menu(app: &AppHandle) {
     let state: State<AppState> = app.state();
-    let ctx = state.menu_ctx.lock().unwrap();
+    let ctx = {
+        let menu_doc = state.menu_doc.lock().unwrap();
+        let docs = state.docs.lock().unwrap();
+        match menu_doc.as_ref().and_then(|label| docs.get(label)) {
+            Some(doc) => MenuContext {
+                has_doc: true,
+                is_untitled: doc.is_untitled,
+                is_edit_mode: doc.is_edit_mode,
+            },
+            None => MenuContext::default(),
+        }
+    };
     if let Ok(menu) = build_menu(app, &ctx) {
         let _ = app.set_menu(menu);
     }
@@ -517,17 +530,13 @@ fn create_doc_window(
         DocState {
             file_path: file_path.clone(),
             is_untitled,
+            is_edit_mode: is_untitled,
             file_data,
             undo_data,
         },
     );
 
-    {
-        let mut ctx = state.menu_ctx.lock().unwrap();
-        ctx.has_doc = true;
-        ctx.is_untitled = is_untitled;
-        ctx.is_edit_mode = is_untitled;
-    }
+    *state.menu_doc.lock().unwrap() = Some(label.clone());
     apply_menu(app);
 
     WebviewWindowBuilder::new(app, &label, WebviewUrl::App("renderer.html".into()))
@@ -545,6 +554,10 @@ fn cleanup_doc_window(app: &AppHandle, label: &str) {
     let doc = state.docs.lock().unwrap().remove(label);
     if let Some(doc) = doc {
         let _ = fs::remove_file(swp_path(&doc.file_path));
+    }
+    let mut menu_doc = state.menu_doc.lock().unwrap();
+    if menu_doc.as_deref() == Some(label) {
+        *menu_doc = None;
     }
 }
 
@@ -699,7 +712,6 @@ fn save_as(
 
     add_to_recent_documents(&app, &new_path);
 
-    state.menu_ctx.lock().unwrap().is_untitled = false;
     apply_menu(&app);
 
     let _ = window.set_title(&title_text(&new_path));
@@ -755,13 +767,18 @@ fn local_store_set(
 }
 
 #[tauri::command(async)]
-fn set_edit_mode(app: AppHandle, state: State<AppState>, is_edit_mode: bool) {
+fn set_edit_mode(
+    app: AppHandle,
+    window: WebviewWindow,
+    state: State<AppState>,
+    is_edit_mode: bool,
+) {
     {
-        let mut ctx = state.menu_ctx.lock().unwrap();
-        if ctx.is_edit_mode == is_edit_mode {
-            return;
+        let mut docs = state.docs.lock().unwrap();
+        match docs.get_mut(window.label()) {
+            Some(doc) if doc.is_edit_mode != is_edit_mode => doc.is_edit_mode = is_edit_mode,
+            _ => return,
         }
-        ctx.is_edit_mode = is_edit_mode;
     }
     apply_menu(&app);
 }
@@ -914,7 +931,7 @@ fn close_document(window: WebviewWindow) {
 fn create_home_window(app: &AppHandle) {
     {
         let state: State<AppState> = app.state();
-        *state.menu_ctx.lock().unwrap() = MenuContext::default();
+        *state.menu_doc.lock().unwrap() = None;
     }
     apply_menu(app);
     let _ = WebviewWindowBuilder::new(app, "home", WebviewUrl::App("home.html".into()))
@@ -969,12 +986,28 @@ pub fn run() {
             close_document,
         ])
         .on_menu_event(|app, event| handle_menu_event(app, event.id().as_ref()))
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                if window.label().starts_with("doc-") {
-                    cleanup_doc_window(window.app_handle(), window.label());
+        .on_window_event(|window, event| match event {
+            // The menu is shared by all windows; show the focused document's
+            // state in it. Modal windows leave it as it is.
+            tauri::WindowEvent::Focused(true) => {
+                let doc = match window.label() {
+                    "home" => None,
+                    label if label.starts_with("doc-") => Some(label.to_string()),
+                    _ => return,
+                };
+                let state: State<AppState> = window.state();
+                let changed = {
+                    let mut menu_doc = state.menu_doc.lock().unwrap();
+                    std::mem::replace(&mut *menu_doc, doc.clone()) != doc
+                };
+                if changed {
+                    apply_menu(window.app_handle());
                 }
             }
+            tauri::WindowEvent::Destroyed if window.label().starts_with("doc-") => {
+                cleanup_doc_window(window.app_handle(), window.label());
+            }
+            _ => {}
         })
         .setup(|app| {
             let handle = app.handle();

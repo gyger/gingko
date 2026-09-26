@@ -104,6 +104,15 @@ currentWindow.listen('menu-clicked', async (event) => {
   }
 })
 
+// The Edit menu offers text commands while a card is being edited, and card
+// commands otherwise.
+document.addEventListener('focusin', (e) => {
+  if (e.target.nodeName === 'TEXTAREA') { invoke('set_edit_mode', { isEditMode: true }) }
+})
+document.addEventListener('focusout', (e) => {
+  if (e.target.nodeName === 'TEXTAREA') { invoke('set_edit_mode', { isEditMode: false }) }
+})
+
 async function saveThisAs () {
   const newPath = await invoke('save_file_dialog')
   if (newPath) {
