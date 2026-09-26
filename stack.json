@@ -1,13 +1,14 @@
 {
   "version": 5,
-  "prev": "36daa53bf1128113b932327812e515c41a417dc4",
-  "head": "2b800974ebbf8a1c1ca48c5064a0737a8e63be53",
+  "prev": "ec6cb2bd7ab453d76a390c45e8d0e264520c0745",
+  "head": "6025d70266f5fc0a6282b25445a5729f5db44760",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "legacy-gko-converter",
     "desktop-themes-and-shortcut-tray",
-    "live-reload-on-disk-change"
+    "live-reload-on-disk-change",
+    "windows-installer-ci"
   ],
   "unapplied": [],
   "hidden": [],
@@ -26,6 +27,9 @@
     },
     "tauri-desktop-app": {
       "oid": "4e56f2e6ee18a56f03fa8fb725eb87acf64dddc5"
+    },
+    "windows-installer-ci": {
+      "oid": "6025d70266f5fc0a6282b25445a5729f5db44760"
     }
   }
 }
