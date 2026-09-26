@@ -1,7 +1,7 @@
-Bottom: 665b3377c0ec8122f63657de6a01654f7dbd5144
-Top:    7c10f34f75a3f92a9de626f7052dff3b8e7f5f95
+Bottom: 7d4195b140091fab2e2988cb3d12bb5e4f5365d2
+Top:    ac8ecfb1d0a21830de5887b85c1519cf1c99d8d6
 Author: Claude <noreply@anthropic.com>
-Date:   2026-09-26 11:31:28 +0200
+Date:   2026-09-26 11:35:31 +0200
 
 Add PNG icons to the Tauri bundle so Linux builds compile
 

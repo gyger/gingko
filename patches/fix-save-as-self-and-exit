@@ -1,7 +1,7 @@
-Bottom: ca8a1c58bb7949a667289143840b8a1394b0c1aa
-Top:    609d04d20706f87286832221491bea277829512f
+Bottom: a60a53e39c85314d3645d5447d085091e5b3ce52
+Top:    3366f3c69f98824cb5079ad50b4be338054ab302
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:31:28 +0200
+Date:   2026-09-26 11:35:31 +0200
 
 Fix Save As onto the current file and make Exit close windows
 

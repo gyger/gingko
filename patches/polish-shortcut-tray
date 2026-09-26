@@ -1,7 +1,7 @@
-Bottom: 2fa2bbef9a215e2b81a5c68ae22141d56ea7090f
-Top:    7803cab1a310d48c9cf4d8bf7ee286cfcb3a0a5b
+Bottom: f24ff4840551d58d4a2ecfa8e6f1be54bd4e2223
+Top:    4ea611b632f5e1f93ae234bc53105d1c2f70600d
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:31:28 +0200
+Date:   2026-09-26 11:35:31 +0200
 
 Polish desktop shortcut tray: position, save indicator, stale tooltip
 

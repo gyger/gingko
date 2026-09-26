@@ -1,7 +1,7 @@
-Bottom: aa34a15186f8e3a2fdf7e9dcc3e724716f01230c
-Top:    ca8a1c58bb7949a667289143840b8a1394b0c1aa
+Bottom: 29a31c8e322cbd82c2704d3f2d384c892bc6f530
+Top:    a60a53e39c85314d3645d5447d085091e5b3ce52
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 11:31:28 +0200
+Date:   2026-09-26 11:35:31 +0200
 
 Restrict backend commands to the home and document windows
 
