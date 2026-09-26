@@ -1,4 +1,4 @@
-module Doc.Fullscreen exposing (view)
+module Doc.Fullscreen exposing (view, viewFullscreenButtonsDesktop)
 
 import Ant.Icons.Svg as Icons
 import Doc.TreeUtils exposing (getColumnById)
@@ -89,6 +89,28 @@ viewFullscreenButtons { language, isMac, dirty, lastLocalSave, lastRemoteSave, c
             [ div [ id "fullscreen-save-button", onClick msgs.saveChanges, title saveShortcutTip ] [ Icons.saveOutlined [ width 24 ] ]
             , viewSaveIndicator language { dirty = dirty, lastLocalSave = lastLocalSave, lastRemoteSave = lastRemoteSave } currentTime
             ]
+        , div [ id "fullscreen-save-and-exit-button", onClick msgs.saveAndExitFullscreen, title saveAndCloseTip ]
+            []
+        ]
+
+
+viewFullscreenButtonsDesktop :
+    { exitFullscreenRequested : msg, saveAndExitFullscreen : msg }
+    -> { isMac : Bool, dirty : Bool }
+    -> Html msg
+viewFullscreenButtonsDesktop msgs { isMac, dirty } =
+    let
+        saveAndCloseTip =
+            if isMac then
+                "⌘+Enter to Save and Exit Fullscreen"
+
+            else
+                "Ctrl+Enter to Save and Exit Fullscreen"
+    in
+    div [ id "fullscreen-buttons", classList [ ( "dirty", dirty ) ] ]
+        [ div
+            [ id "fullscreen-exit", onClick msgs.exitFullscreenRequested, title "Exit Fullscreen Mode" ]
+            [ Icons.fullscreenExitOutlined [ width 24 ] ]
         , div [ id "fullscreen-save-and-exit-button", onClick msgs.saveAndExitFullscreen, title saveAndCloseTip ]
             []
         ]
