@@ -1,0 +1,16 @@
+Bottom: 3290ad81b7ebf38277c40bdd2aa1b958089f5ed2
+Top:    9bfc79e652cf544b301f205b83c0cc1b5fff4a90
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:47 +0200
+
+Focus the existing window when a file is already open
+
+Opening a document that is already open showed a "Cannot open file
+twice" dialog and failed. Raise and focus the window that holds it
+instead, and report success so the caller (the home window, a second
+instance, a recent-documents click) proceeds as if it had opened.
+
+Compare paths canonically as well: the same file arrives with different
+casing or prefixes from the recent list, the command line and dialogs.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

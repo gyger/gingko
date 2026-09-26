@@ -1,0 +1,13 @@
+Bottom: feba870e0a7edbf708aee164ec5ed1c60f91de45
+Top:    bd24cb0cb32aa2bede5ea24a1398f0415c126778
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:48 +0200
+
+Load unparseable files as a single card instead of an empty document
+
+The empty document would overwrite the file on the first edit. Use the
+same parseFileData fallback as live reload.
+
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>

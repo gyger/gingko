@@ -1,0 +1,16 @@
+Bottom: 60ece54ea1e3c8b5da4335b75e391ab710fd1b19
+Top:    410e39edee37b1cc938a193939d65cdd3019ee1d
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:46 +0200
+
+Live-reload documents when the .gkw file changes on disk
+
+Watch each open document's file with notify; distinguish external
+modifications from the app's own saves by content hash. External
+changes are pushed to the renderer as a 'file-changed' event and into
+Elm as FileChangedOnDisk, which re-parses and swaps the working tree.
+If the document has unsaved edits (or a card is being edited), the
+user is asked before reloading. This enables workflows where an agent
+or editor modifies the .gkw on disk while it is open.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>

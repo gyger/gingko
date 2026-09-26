@@ -1,0 +1,18 @@
+Bottom: f7f477c8881d88da50c52afc8fdbd804c0245cd1
+Top:    3290ad81b7ebf38277c40bdd2aa1b958089f5ed2
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:47 +0200
+
+Write the current document content on Save As
+
+save_as only copies the document as it already is on disk. An untitled
+doc is written by save_file when its content changes, so a doc that was
+never edited - or one whose card is still open in the editor - was
+copied out as an empty file.
+
+Add a SaveRequested incoming message the desktop wrapper sends after
+save_as. It runs localSaveDo, which folds the in-progress editing field
+into the tree before serializing, so the new path gets the document as
+it currently stands.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

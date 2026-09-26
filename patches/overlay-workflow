@@ -1,0 +1,17 @@
+Bottom: 438329e64bef9442073caf50c0b49cae14f882da
+Top:    86e21ec2f5995838bbf6f9bdf1346adf36557998
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:18 +0200
+
+Document the StGit overlay workflow
+
+Purpose: explain how this downstream checkout keeps its local changes
+(the Tauri desktop app) as a StGit patch stack on top of upstream
+gingko/client master, and how to rebase that stack onto a newer upstream.
+
+Constraints: documentation only; touches no upstream file, so it should
+always apply cleanly as the base of the stack.
+
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>

@@ -1,0 +1,20 @@
+Bottom: 3d42fbb5260284be1db4df60de66c46c246d31d6
+Top:    50e8c943af70afc751483313b6c2d289522f3a10
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:45 +0200
+
+Fix empty document windows opened from the home screen
+
+Tauri v2 runs non-async commands on the main thread, so creating a
+WebviewWindow inside new_document/open_document deadlocked the event
+loop on Windows (wry#583): the window shell appeared but stayed at
+about:blank. Mark all commands #[tauri::command(async)] and spawn
+worker threads for window creation from main-thread contexts (menu
+events, single-instance callback, macOS Reopen/Opened).
+
+Also seed card "1" for new documents in Electron.elm — the current
+defaultTree is empty because the web app creates the first card via
+the database flow — and load files without <gingko-card> tags (plain
+markdown) as a single card instead of an empty tree.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>

@@ -1,0 +1,15 @@
+Bottom: 953dec1b2629a113017f36d1197c686edf7ea148
+Top:    d0ccbdba7548823ec1ed118e67d808b4f34d6145
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:45 +0200
+
+Enable themes and keyboard-shortcut tray in the Tauri desktop app
+
+Wire up two web-app features that were missing from the desktop wrapper:
+- View > Theme native menu (Default/Classic/Gray/Green/Turquoise/Dark),
+  forwarded to Elm as a ThemeChanged Incoming message and applied via
+  the existing Page.Doc.Theme; persisted per-file and restored on open.
+- Doc.UI.viewShortcuts tray, with its toggle persisted per-file via
+  SaveUserSetting ("shortcutTrayOpen").
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>

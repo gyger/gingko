@@ -1,9 +1,79 @@
 {
   "version": 5,
-  "prev": null,
+  "prev": "bce0e28486fe0c67cb71c7bd9f7fab0069a7dc7f",
   "head": "27516dab36688b22922be08804294834b7ba263c",
-  "applied": [],
+  "applied": [
+    "overlay-workflow",
+    "tauri-desktop-app",
+    "fix-empty-doc-windows",
+    "tauri-production-build",
+    "legacy-gko-converter",
+    "desktop-themes-and-shortcut-tray",
+    "polish-shortcut-tray",
+    "live-reload-on-disk-change",
+    "fix-save-as-untitled",
+    "show-save-failures",
+    "shortcut-tray-default-closed",
+    "save-as-writes-current-content",
+    "focus-already-open-window",
+    "restrict-backend-commands",
+    "fix-save-as-self-and-exit",
+    "load-unparseable-as-single-card",
+    "tauri-linux-png-icons"
+  ],
   "unapplied": [],
   "hidden": [],
-  "patches": {}
+  "patches": {
+    "desktop-themes-and-shortcut-tray": {
+      "oid": "94a0bbcd4a96fedbaf1c94ec796454b09ed6468b"
+    },
+    "fix-empty-doc-windows": {
+      "oid": "cd3c0d1a493b5ac91ae8d4c91d883ff15535a52b"
+    },
+    "fix-save-as-self-and-exit": {
+      "oid": "1707b689e21bd7064f39c7958a59b9eacc611a52"
+    },
+    "fix-save-as-untitled": {
+      "oid": "fbc15cf2da9914f9fb9545844d56a6777ab8d93c"
+    },
+    "focus-already-open-window": {
+      "oid": "128378d1808720ce457746dabc77455abd86cd63"
+    },
+    "legacy-gko-converter": {
+      "oid": "ce5371885be7a499c3d1e398ad6b8e5b370dfbef"
+    },
+    "live-reload-on-disk-change": {
+      "oid": "9f627a0758b548df9f22d65b75ef4f419fc441da"
+    },
+    "load-unparseable-as-single-card": {
+      "oid": "cd05f8b53914557661fe4dc2740dabbc8fd1be79"
+    },
+    "overlay-workflow": {
+      "oid": "84cf29350ab862bc14d2b55e5ab5c29c5dfe583f"
+    },
+    "polish-shortcut-tray": {
+      "oid": "81bd7563c81a06041c4dd173b479d59cb0609f4d"
+    },
+    "restrict-backend-commands": {
+      "oid": "c7a123ed58aa8ab8f1409aed8022721f13d32edb"
+    },
+    "save-as-writes-current-content": {
+      "oid": "a98578cf95c3758a3b33e214010b7f38b9cfd346"
+    },
+    "shortcut-tray-default-closed": {
+      "oid": "53eda2f0d0f0cccc0a2ec78d12dac4f6bb11bca8"
+    },
+    "show-save-failures": {
+      "oid": "384fa699a4a2736d1d573ee280291fb1d57f5d2b"
+    },
+    "tauri-desktop-app": {
+      "oid": "f71619180ec30f2d859e072cdacd7337fe55263d"
+    },
+    "tauri-linux-png-icons": {
+      "oid": "27516dab36688b22922be08804294834b7ba263c"
+    },
+    "tauri-production-build": {
+      "oid": "32d35d722020bbc12d17ad692e0aa2cec8506304"
+    }
+  }
 }

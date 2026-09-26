@@ -1,0 +1,14 @@
+Bottom: d0ccbdba7548823ec1ed118e67d808b4f34d6145
+Top:    60ece54ea1e3c8b5da4335b75e391ab710fd1b19
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:46 +0200
+
+Polish desktop shortcut tray: position, save indicator, stale tooltip
+
+- Pin the collapsed tray icon to the top edge (the desktop has no
+  header bar, so the web app's 40px offset left it floating).
+- Shift the save indicator left of the toggle icon; when the tray is
+  open it disappears behind the tray panel (z-index).
+- Close any open tooltip when toggling the tray, matching the web app.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>

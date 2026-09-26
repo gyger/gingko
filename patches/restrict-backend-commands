@@ -1,0 +1,15 @@
+Bottom: 9bfc79e652cf544b301f205b83c0cc1b5fff4a90
+Top:    064b75c981915ac26a16bf5b9bf23423968ae36c
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:00:47 +0200
+
+Restrict backend commands to the home and document windows
+
+App commands were callable from every window, including the FAQ modal,
+which loads a third-party script. Declare the commands in an app
+manifest so they are subject to capabilities, grant them only to the
+home and doc windows, and give the support modal just window close.
+
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>

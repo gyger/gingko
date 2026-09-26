@@ -1,0 +1,15 @@
+Bottom: bd24cb0cb32aa2bede5ea24a1398f0415c126778
+Top:    928a28674660e34f2f43ea3ce9bad2c4e62a77ca
+Author: Claude <noreply@anthropic.com>
+Date:   2026-09-26 11:01:21 +0200
+
+Add PNG icons to the Tauri bundle so Linux builds compile
+
+On Linux, tauri::generate_context!() uses the first .png in bundle.icon
+as the default window icon and falls back to src-tauri/icons/icon.png.
+The list only held .ico and .icns, so the macro panicked. List the
+existing RGBA PNGs from build/sources/ (256px first, so it becomes the
+window icon). The Linux bundlers read their PNG sizes from the same list.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01B5KyLJQHaqJzU13wjYJixd
