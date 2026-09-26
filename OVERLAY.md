@@ -87,14 +87,78 @@ Upstream the patches that could be generally useful.
 If upstream merges an equivalent change, `stg rebase` reports the patch as
 empty; remove it with `stg delete`.
 
-## Publishing
+## Publishing to GitHub (and restoring the stack elsewhere)
 
-The `overlay` branch is rewritten on every rebase, so publishing it to the fork
-needs a force push:
+A plain `git push` / `git clone` only carries the `overlay` branch, i.e. the
+patches as ordinary commits. StGit's own metadata (patch names, which patches
+are applied, the stack's operation log) lives in a separate ref,
+`refs/stacks/overlay`, a commit containing `stack.json`. Sync it explicitly
+next to the branch; GitHub stores it like any other ref (it's just not shown
+in the web UI):
+
+```text
+origin (gyger/gingko)
+├── refs/heads/overlay     ← the code: upstream master + patches as commits
+└── refs/stacks/overlay    ← StGit metadata for that branch
+```
+
+The per-patch refs `refs/patches/overlay/*` don't need syncing; StGit
+recreates them from `refs/stacks/overlay`.
+
+### Push
 
 ```bash
-git push --force-with-lease origin overlay
+git push --force-with-lease origin overlay   # branch is rewritten by rebases
+git push origin refs/stacks/overlay          # no force needed, see below
 ```
+
+Every StGit operation appends a commit to the stack ref, so its history is
+linear and a normal push fast-forwards. If that push is rejected, the stack
+was changed somewhere else in the meantime. Don't force it; fetch the
+remote stack and reconcile first.
+
+Optional alias for both steps:
+
+```bash
+git config alias.overlay-push '!git push --force-with-lease origin overlay && git push origin refs/stacks/overlay'
+```
+
+### Set up a new checkout
+
+Remotes, branches and the stack metadata; branch config such as
+`branch.overlay.*` is local git config and doesn't travel with the repo:
+
+```bash
+git clone -b overlay https://github.com/gyger/gingko.git gingko && cd gingko
+git branch --unset-upstream                  # overlay tracks nothing
+git remote add upstream https://github.com/gingko/client.git
+git fetch upstream master
+git branch --track master upstream/master
+git fetch origin refs/stacks/overlay:refs/stacks/overlay
+stg series                                   # should list the patches
+```
+
+The stack ref and the branch have to belong together: the stack's recorded
+head must equal the `overlay` commit. They do as long as both were pushed
+together. If `stg` reports that the branch was modified outside StGit, run
+`stg repair`.
+
+To pick up stack changes pushed from another machine later (this discards
+local, unpushed work on `overlay`):
+
+```bash
+git fetch origin
+git switch overlay && git reset --hard origin/overlay
+git fetch origin +refs/stacks/overlay:refs/stacks/overlay
+stg series
+```
+
+Deliberately **not** used: a permanent `fetch = +refs/stacks/*:refs/stacks/*`
+refspec on `origin`. It would force-overwrite the local stack metadata on
+every `git fetch`, even when you have unpushed StGit work, and leave it out
+of sync with the local `overlay` branch.
+
+### Plain patch files
 
 `stg export -d patches/` writes the stack as plain patch files, e.g. for
 review or for applying with `git am` elsewhere.
