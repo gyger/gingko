@@ -1,9 +1,8 @@
 {
   "version": 5,
-  "prev": "7dc8991e909a26fed8449b69a593407335df7e38",
-  "head": "23372d973489ed518bb06983fbde2f7f90bd64fb",
-  "applied": [],
-  "unapplied": [
+  "prev": "7975d0ef232375a4d3c51fad3ef9dbf34e733846",
+  "head": "67e388eec8e367248301fd86d6bd7bc790997781",
+  "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "fix-empty-doc-windows",
@@ -22,6 +21,7 @@
     "load-unparseable-as-single-card",
     "tauri-linux-png-icons"
   ],
+  "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
