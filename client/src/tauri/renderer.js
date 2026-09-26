@@ -119,6 +119,20 @@ document.addEventListener('focusout', (e) => {
   if (e.target.nodeName === 'TEXTAREA') { invoke('set_edit_mode', { isEditMode: false }) }
 })
 
+/* ==== External file changes (e.g. an agent editing the .gkw) ==== */
+
+currentWindow.listen('file-changed', (event) => {
+  const editingActive = document.activeElement && document.activeElement.nodeName === 'TEXTAREA'
+  if (DIRTY || editingActive) {
+    const reload = window.confirm(
+      'This file was changed on disk.\nReload it and discard your unsaved changes?'
+    )
+    if (!reload) { return }
+  }
+  DIRTY = false
+  toElm(event.payload, 'docMsgs', 'FileChangedOnDisk')
+})
+
 async function saveThisAs () {
   const newPath = await invoke('save_file_dialog')
   if (newPath) {
