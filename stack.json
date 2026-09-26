@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "b5f2e24d28c67344a891f9695ed306964f814fb4",
-  "head": "fcfd8f65dcc00a74f7f84f2aea077cf6e56de88b",
+  "prev": "4e8262653f561b64ef16d7153ee7137afda09413",
+  "head": "8b4fb69572293baeb6d2ba5395a41303799517b7",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -29,7 +29,7 @@
       "oid": "79c4badcff1001f945216bc0299f5eae44944bca"
     },
     "windows-installer-ci": {
-      "oid": "fcfd8f65dcc00a74f7f84f2aea077cf6e56de88b"
+      "oid": "8b4fb69572293baeb6d2ba5395a41303799517b7"
     }
   }
 }
