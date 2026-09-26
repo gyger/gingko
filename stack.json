@@ -1,20 +1,20 @@
 {
   "version": 5,
-  "prev": "b31b950239f35ea5d6b97fc3865613107569b8bf",
-  "head": "df156719a438e37f072caa454cdc27e77be330c6",
+  "prev": "3d407fb2ec95df23728c20f92661e29f58bb06f5",
+  "head": "465e1b664d6a1d7a6289887655c48bfdea79c672",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
-    "legacy-gko-converter"
+    "legacy-gko-converter",
+    "desktop-themes-and-shortcut-tray"
   ],
   "unapplied": [
-    "desktop-themes-and-shortcut-tray",
     "live-reload-on-disk-change"
   ],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
-      "oid": "72292f33b360c15f43afa246f790f98937a50475"
+      "oid": "465e1b664d6a1d7a6289887655c48bfdea79c672"
     },
     "legacy-gko-converter": {
       "oid": "df156719a438e37f072caa454cdc27e77be330c6"
