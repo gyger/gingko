@@ -1,7 +1,7 @@
 Bottom: 6ca963197b134bca3f2be05ec3e6ddf5507c913a
 Top:    6aa8f8ba380f9c4c3085fed57f28e2faa0875560
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 12:01:26 +0200
+Date:   2026-09-26 12:01:42 +0200
 
 Live-reload documents when the file changes on disk
 

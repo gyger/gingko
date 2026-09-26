@@ -1,16 +1,37 @@
 Bottom: 438329e64bef9442073caf50c0b49cae14f882da
 Top:    aa5f19591c8b4b5f06f8ad40281e57af51bc7a07
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 12:01:26 +0200
+Date:   2026-09-26 12:01:42 +0200
 
-Document the StGit overlay workflow
+Document the StGit overlay workflow and add its helper scripts
 
-Purpose: explain how this downstream checkout keeps its local changes
-(the Tauri desktop app) as a StGit patch stack on top of upstream
-gingko/client master, and how to rebase that stack onto a newer upstream.
+Purpose:
+Explain and support how this downstream fork keeps its changes (the
+Tauri desktop app) as a StGit patch stack on top of upstream
+gingko/client master: rebasing onto a newer upstream, sharing the stack
+through GitHub so any clone can recover it, and collaborating via topic
+stacks and pull requests into the canonical `overlay` stack.
 
-Constraints: documentation only; touches no upstream file, so it should
-always apply cleanly as the base of the stack.
+Approach:
+- OVERLAY.md: branch/remote layout, update cycle, the "patches are
+  intentions" convention (Purpose / Approach / Constraints), sharing,
+  collaboration and agent workflows.
+- tools/overlay-setup.sh: versioned stand-in for the .git/config that
+  git doesn't share (upstream remote, master tracking, stack-ref fetch
+  into refs/remote-stacks/origin/*, git aliases, stack restore).
+- tools/overlay-publish.sh: atomic push of branch + refs/stacks/<branch>;
+  the branch may be forced, the stack ref must fast-forward, which makes
+  it the guard against concurrent updates.
+- tools/overlay-adopt.sh: make overlay an exact copy of a published
+  stack (recovery, landing a reviewed topic), refusing to drop local
+  stack work or to adopt a topic cloned from an outdated overlay.
+- tools/.gitattributes keeps the scripts LF on core.autocrlf checkouts.
+
+Constraints:
+- Touches no upstream file, so it always applies cleanly as the base of
+  the stack.
+- Never fetch stack refs directly into refs/stacks/*; local stack state
+  changes only through stg or overlay-adopt.sh.
 
 Generated with AI
 
