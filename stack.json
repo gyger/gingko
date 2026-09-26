@@ -1,11 +1,10 @@
 {
   "version": 5,
-  "prev": "2bd5e252d3f8c87582d056dae7d32833599b21bb",
-  "head": "009a4d1699babeeea1239cc61908884043aa9c73",
+  "prev": "ddf53b1e97515b2cddd736b32eb2df1c91dbd38b",
+  "head": "5d188828f7f74d0edead0643aa824d9931f06d62",
   "applied": [
     "overlay-workflow",
-    "tauri-desktop-app",
-    "refresh-temp"
+    "tauri-desktop-app"
   ],
   "unapplied": [
     "fix-empty-doc-windows",
@@ -56,9 +55,6 @@
     "polish-shortcut-tray": {
       "oid": "22143ecd96a5a4dda89a4cbb14020b03a01fe941"
     },
-    "refresh-temp": {
-      "oid": "009a4d1699babeeea1239cc61908884043aa9c73"
-    },
     "restrict-backend-commands": {
       "oid": "48383b485cccb4cfdaa8b45ea2a89e67dc5bc38c"
     },
@@ -72,7 +68,7 @@
       "oid": "f8d4779d4d3b46bbb5c08d6f2eff11907ccfaa6c"
     },
     "tauri-desktop-app": {
-      "oid": "cde11df0567d7851e6f58b603817fe652d69bc8a"
+      "oid": "5d188828f7f74d0edead0643aa824d9931f06d62"
     },
     "tauri-linux-png-icons": {
       "oid": "5580a5acea20dc84b758da68648683d405ce2726"
