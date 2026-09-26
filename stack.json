@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "6d1982c066f15a26b208d90ce182fa50e8b7d43b",
-  "head": "c0f1484f8bf6e07c329b05e9ca665708aeccb1bc",
+  "prev": "b5f2e24d28c67344a891f9695ed306964f814fb4",
+  "head": "fcfd8f65dcc00a74f7f84f2aea077cf6e56de88b",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -20,7 +20,7 @@
       "oid": "151661b5ab490bb5c2d109d27d0c902c480bc05f"
     },
     "live-reload-on-disk-change": {
-      "oid": "d2781c039431409a5dfb90383ad123d809b645d4"
+      "oid": "f225b0c0b99c58a2402a8855ad56d27bd2277d8a"
     },
     "overlay-workflow": {
       "oid": "d291a11c4d716bcba777973a50a4d282b6559ba6"
@@ -29,7 +29,7 @@
       "oid": "79c4badcff1001f945216bc0299f5eae44944bca"
     },
     "windows-installer-ci": {
-      "oid": "c0f1484f8bf6e07c329b05e9ca665708aeccb1bc"
+      "oid": "fcfd8f65dcc00a74f7f84f2aea077cf6e56de88b"
     }
   }
 }
