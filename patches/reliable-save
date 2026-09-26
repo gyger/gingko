@@ -1,7 +1,7 @@
 Bottom: 6517249bfcad07b911dc1738429ddbac6566bb73
 Top:    6bf19ae0bf678eb952b0b581632efb5e49623d40
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 12:36:42 +0200
+Date:   2026-09-26 12:36:43 +0200
 
 Make Save, Save As and Exit reliable in the desktop app
 
@@ -18,7 +18,9 @@ Approach:
   SaveRequested incoming message, which runs localSaveDo. That folds the
   in-progress editing field into the tree before serializing, so the new
   path gets the document as it stands (save_as by itself only copies
-  the on-disk file).
+  the on-disk file). The renderer waits for that write before Save As
+  completes, so "Save" in the close prompt can't destroy the window
+  before the content is written.
 - Save As onto the document's own path returns early; it used to copy
   the file onto itself and then delete its undo history and swap file.
 - Failed save_file/save_as calls are reported to Elm as SaveError, and
