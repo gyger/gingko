@@ -1,6 +1,8 @@
 // Gingko Writer Desktop — Tauri 2 backend.
 // Port of the Electron main process (src/electron/main.js).
 
+mod legacy;
+
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -478,6 +480,39 @@ fn create_doc_window(
     let state: State<AppState> = app.state();
     let _opening = state.opening.lock().unwrap();
 
+    // Gingko Desktop 2.x .gko files (7z archives of a database) are converted
+    // into a new Untitled document; the original file is left untouched.
+    let (file_path, init_file_data) = match file_path {
+        Some(fp) if legacy::is_legacy_gko(&fp) => {
+            let convert = app
+                .dialog()
+                .message(
+                    "This file is from Gingko Desktop 2.x, and must be converted to the new format.\n\n\
+                     Convert and open a copy? (The original file is not modified.)",
+                )
+                .title("Legacy Gingko Desktop file")
+                .buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancelCustom(
+                    "Convert".into(),
+                    "Cancel".into(),
+                ))
+                .blocking_show();
+            if !convert {
+                return Err("Conversion declined".into());
+            }
+            match legacy::convert_gko_to_markdown(&fp) {
+                Ok(markdown) => (None, Some(markdown)),
+                Err(e) => {
+                    app.dialog()
+                        .message(format!("Could not convert this file:\n{}", e))
+                        .title("Conversion failed")
+                        .blocking_show();
+                    return Err(e);
+                }
+            }
+        }
+        other => (other, init_file_data),
+    };
+
     // A file can only be open once: surface the window that already has it.
     if let Some(ref fp) = file_path {
         let existing = {
@@ -512,7 +547,14 @@ fn create_doc_window(
             (fp, init_file_data)
         }
         Some(fp) => {
-            let data = fs::read_to_string(&fp).map_err(|e| e.to_string())?;
+            // Legacy archives were converted above; anything else must be text.
+            let Ok(data) = String::from_utf8(fs::read(&fp).map_err(|e| e.to_string())?) else {
+                app.dialog()
+                    .message("This file is not a text document, and cannot be opened.")
+                    .title("Cannot open file")
+                    .blocking_show();
+                return Err("Not a UTF-8 text file".into());
+            };
 
             // Backup copy in temp, swap copy next to the file.
             let base = fp
