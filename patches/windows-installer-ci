@@ -1,7 +1,7 @@
 Bottom: 8ab06b136fe1a489edac09c5f96ef628d585ca02
-Top:    f52b3c6b99d86a5c6fe50b9ac94cc7b9ffaa89a2
+Top:    827147b07e314f7bc2f19b736ba4f6d7cd01871a
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 18:34:04 +0200
+Date:   2026-09-26 18:47:13 +0200
 
 Build the Windows installer on GitHub for every overlay push
 
