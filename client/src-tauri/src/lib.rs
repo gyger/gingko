@@ -165,6 +165,18 @@ fn swp_path(file_path: &Path) -> PathBuf {
     PathBuf::from(p)
 }
 
+// Paths reaching us from the recent-documents list, the command line and file
+// dialogs can differ in case or prefix on Windows while naming the same file.
+fn same_file(a: &Path, b: &Path) -> bool {
+    if a == b {
+        return true;
+    }
+    match (fs::canonicalize(a), fs::canonicalize(b)) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => false,
+    }
+}
+
 // Equivalent of filenamifyPath(filePath, { replacement: '%' })
 fn namify_path(file_path: &Path) -> String {
     file_path
@@ -456,15 +468,23 @@ fn create_doc_window(
 ) -> Result<(), String> {
     let state: State<AppState> = app.state();
 
-    // Refuse to open the same file twice.
+    // A file can only be open once: surface the window that already has it.
     if let Some(ref fp) = file_path {
-        let docs = state.docs.lock().unwrap();
-        if docs.values().any(|d| &d.file_path == fp) {
-            app.dialog()
-                .message("Cannot open file twice")
-                .title("File already open")
-                .blocking_show();
-            return Err("File already open".into());
+        let existing = {
+            let docs = state.docs.lock().unwrap();
+            docs.iter()
+                .find(|(_, d)| same_file(&d.file_path, fp))
+                .map(|(label, _)| label.clone())
+        };
+        if let Some(label) = existing {
+            if let Some(win) = app.get_webview_window(&label) {
+                if win.is_minimized().unwrap_or(false) {
+                    let _ = win.unminimize();
+                }
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+            return Ok(());
         }
     }
 
