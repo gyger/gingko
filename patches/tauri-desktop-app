@@ -1,7 +1,7 @@
 Bottom: aa5f19591c8b4b5f06f8ad40281e57af51bc7a07
 Top:    1ec9eb8e6f34c25b52d8555fa04726a440ff4b1c
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 13:39:16 +0200
+Date:   2026-09-26 13:40:05 +0200
 
 Reimplement the desktop app with Tauri 2, reusing the web app's Elm code
 
@@ -30,14 +30,14 @@ Approach:
 - Menu actions reach only the focused document: Rust uses emit_to(label)
   and the renderer listens on its own window. A plain emit(), or a
   global listen(), reaches every window.
-- The menu bar is app-wide, so it shows the focused document's state:
-  each document keeps its own untitled/editing flags. The menu is built
-  once and updated in place when a document or the home window gains
-  focus, and when a card's textarea gains or loses focus (the Edit menu
-  swaps between text and card commands). Replacing it with set_menu makes
-  every window re-layout on Windows, which visibly jumps. Document items
-  are disabled, not hidden, while the home window has focus. Updates run
-  on the main thread, like the focus events, so they can't deadlock.
+- Every window has its own menu, built with the window and updated in
+  place: Save/Saved follows the document, and the Edit menu swaps between
+  text and card commands while a card's textarea has focus. A single
+  menu shared by all windows doesn't work on Windows (it is destroyed
+  along with the first window that closes), and replacing a menu bar
+  (set_menu) makes the window visibly re-layout. Updates run on the main
+  thread, like window events. On macOS the menu bar is app-wide, so the
+  focused window's menu is installed on focus.
 - Saving never silently loses content:
   - Untitled documents live in the temp dir; the file is created up
     front, so Save As works on an untouched document. Save As copies the
