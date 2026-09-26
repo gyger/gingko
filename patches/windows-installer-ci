@@ -3,27 +3,28 @@ Top:    827147b07e314f7bc2f19b736ba4f6d7cd01871a
 Author: Samuel Gyger <samuel@gyger.tech>
 Date:   2026-09-26 18:47:13 +0200
 
-Build the Windows installer on GitHub for every overlay push
+Build the Windows installer on GitHub for the commit tagged `build`
 
 Purpose:
-Always have an installable Windows build of the current overlay without
-building locally: every push to `overlay` (git overlay-publish) builds
-the NSIS installer and publishes it at a fixed URL.
+Get an installable Windows build without building locally, for exactly
+the commits that should be built: pushing the tag `build` (moved with
+`git overlay-build`) builds the NSIS installer and publishes it at a
+fixed URL.
 
 Approach:
 - .github/workflows/overlay-windows-build.yml at the repo root (only root
-  workflows run in the monorepo), on windows-latest, for pushes to
-  `overlay` and manual runs.
-- No versioning: one rolling prerelease, tag `overlay-build`. Each run
-  deletes it (and the tag) and recreates it at the built commit, with
-  the installer as Gingko-Writer-Setup.exe, so the download link
-  releases/download/overlay-build/Gingko-Writer-Setup.exe never changes.
+  workflows run in the monorepo), on windows-latest, triggered by pushes
+  of the tag `build`.
+- No versioning: one prerelease on the `build` tag. Each run deletes it
+  (keeping the tag) and recreates it with the installer as
+  Gingko-Writer-Setup.exe, so the download link
+  releases/download/build/Gingko-Writer-Setup.exe never changes.
 - `bun install --ignore-scripts` skips the Electron download and
   node-pty's native build, which only the web/Electron tooling needs;
   Elm 0.19.1 is therefore fetched as a standalone binary (ELM_BINARY)
   instead of via the npm package's install script.
 - Rust (Swatinem/rust-cache) and Elm packages (elm-home) are cached; a
-  newer push cancels a running build.
+  newer tag push cancels a running build.
 
 Constraints:
 - Windows NSIS installer only; unsigned (SmartScreen warns on first run).
