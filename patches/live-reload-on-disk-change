@@ -1,7 +1,7 @@
 Bottom: 2e191bbabbe0e0f4cddea2e9783f11645222f7bb
 Top:    2ad22fde0f7bdf25e9049129add2929960a61281
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:05:28 +0200
+Date:   2026-09-26 19:05:29 +0200
 
 Live-reload documents when the file changes on disk
 
@@ -29,3 +29,5 @@ Approach:
 Constraints:
 - Never overwrite unsaved in-app edits without asking.
 - The app's own saves must not trigger a reload.
+
+Notice: vibe-coded
