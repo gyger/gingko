@@ -21,9 +21,9 @@
   top: 0;
   border-radius: 0 0 0 6px;
 }
-/* When open, the tray covers the save indicator (z-index 5). */
-/* Fixed width, so the document doesn't shift when the tray switches between
-   the card and the text-editing shortcuts. */
+/* When open, the tray covers the save indicator (z-index 5). Its width is
+   fixed, so the document doesn't shift when it switches between the card and
+   the text-editing shortcuts. */
 #desktop-root #shortcuts-tray.open {
   z-index: 6;
   box-sizing: content-box;
