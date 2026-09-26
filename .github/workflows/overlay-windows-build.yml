@@ -1,0 +1,69 @@
+# Windows installer for the desktop app, built from the commit tagged
+# `build` (move the tag and push it: `git overlay-build`). Each run replaces
+# the release on that tag, so the download URL stays the same:
+#   https://github.com/<owner>/<repo>/releases/download/build/Gingko-Writer-Setup.exe
+name: Overlay Windows Build
+
+on:
+  push:
+    tags: [ build ]
+
+concurrency:
+  group: overlay-windows-build
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: client
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client/src-tauri
+
+      - uses: actions/cache@v4
+        with:
+          path: client/elm-home
+          key: elm-${{ hashFiles('client/elm.json') }}
+
+      # The npm `elm` package needs its install script, and install scripts
+      # stay off (see below), so fetch the compiler directly.
+      - name: Install Elm 0.19.1
+        run: |
+          curl -sSL -o "$RUNNER_TEMP/elm.gz" https://github.com/elm/compiler/releases/download/0.19.1/binary-for-windows-64-bit.gz
+          gunzip -c "$RUNNER_TEMP/elm.gz" > "$RUNNER_TEMP/elm.exe"
+          echo "ELM_BINARY=$RUNNER_TEMP\\elm.exe" >> "$GITHUB_ENV"
+
+      # --ignore-scripts skips the Electron download and native modules
+      # (node-pty) that only the web/Electron tooling needs.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Build installer
+        run: |
+          cp config-example.js config.js
+          bunx tauri build --bundles nsis
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe "$RUNNER_TEMP/Gingko-Writer-Setup.exe"
+
+      - name: Publish to the release on the build tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete build --yes || true
+          gh release create build "$RUNNER_TEMP/Gingko-Writer-Setup.exe" \
+            --verify-tag --prerelease \
+            --title "Gingko Writer for Windows (overlay build)" \
+            --notes "Built from $GITHUB_SHA."
