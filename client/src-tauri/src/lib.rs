@@ -373,7 +373,14 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
     match id {
         "menu:new" => open_doc_off_main(app, None, true),
         "menu:open" => open_file_dialog(app),
-        "menu:exit" => app.exit(0),
+        // Close each window instead of exiting, so documents run their close
+        // handling (save prompt for untitled docs, pending saves). The app
+        // exits once the last window is gone.
+        "menu:exit" => {
+            for win in app.webview_windows().values() {
+                let _ = win.close();
+            }
+        }
         "menu:shortcuts" => open_modal(app, "shortcuts"),
         "menu:videos" => open_modal(app, "videos"),
         "menu:faq" => open_modal(app, "faq"),
@@ -496,6 +503,9 @@ fn create_doc_window(
         None => {
             let fp =
                 std::env::temp_dir().join(format!("Untitled-{}-{}.gkw", date_string, file_hash));
+            // Create the file itself, not just the swap copy: save_as copies
+            // from it, and save_file only runs once the content changes.
+            let _ = fs::write(&fp, "");
             let _ = fs::write(swp_path(&fp), "");
             (fp, init_file_data)
         }
@@ -698,6 +708,17 @@ fn save_as(
             .ok_or_else(|| format!("No doc state for window {}", window.label()))?;
         let orig_path = &doc.file_path;
 
+        // Saving onto the current file: nothing to move. Copying a file onto
+        // itself can truncate it, and the cleanup below would delete the
+        // history and swap file of the file we keep.
+        if same_file(orig_path, &new_path) {
+            return Ok((
+                orig_path.to_string_lossy().to_string(),
+                now_ms(),
+                doc.is_untitled,
+            ));
+        }
+
         fs::copy(orig_path, &new_path).map_err(|e| e.to_string())?;
         fs::copy(orig_path, swp_path(&new_path)).map_err(|e| e.to_string())?;
         let _ = fs::rename(
@@ -705,6 +726,10 @@ fn save_as(
             undo_store_path(&app, &new_path),
         );
         let _ = fs::remove_file(swp_path(orig_path));
+        // An untitled document now lives at new_path; drop its temp file.
+        if doc.is_untitled {
+            let _ = fs::remove_file(orig_path);
+        }
 
         doc.file_path = new_path.clone();
         doc.is_untitled = false;

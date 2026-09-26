@@ -15,6 +15,7 @@ let ticking = false
 let DIRTY = false
 let isUntitled = false
 let closing = false
+let saveWaiters = []
 const savedImmutables = new Set()
 const GIT_LIKE_DATA = Symbol.for('couchdb')
 const getDataType = () => GIT_LIKE_DATA
@@ -116,10 +117,21 @@ document.addEventListener('focusout', (e) => {
 async function saveThisAs () {
   const newPath = await invoke('save_file_dialog')
   if (newPath) {
-    const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
-    DIRTY = false
-    isUntitled = untitled
-    toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
+    try {
+      const [savedPath, timestamp, untitled] = await invoke('save_as', { newPath })
+      DIRTY = false
+      isUntitled = untitled
+      toElm([savedPath, timestamp], 'docMsgs', 'SavedToFile')
+      // save_as copies the file as last saved; have Elm write the document
+      // as it stands (e.g. the card being edited), and wait for that write
+      // so that closing the window right after can't cut it off.
+      const saved = new Promise((resolve) => saveWaiters.push(resolve))
+      toElm(null, 'docMsgs', 'SaveRequested')
+      await saved
+    } catch (e) {
+      console.error(e)
+      toElm(String(e), 'docMsgs', 'SaveError')
+    }
   }
 }
 
@@ -226,6 +238,8 @@ const fromElm = (msg, elmData) => {
     },
 
     SaveToFile: async () => {
+      const waiters = saveWaiters
+      saveWaiters = []
       try {
         const [filePath, timestamp, untitled] = await invoke('save_file', { data: elmData[1] })
         DIRTY = false
@@ -233,7 +247,9 @@ const fromElm = (msg, elmData) => {
         toElm([filePath, timestamp], 'docMsgs', 'SavedToFile')
       } catch (e) {
         console.error(e)
+        toElm(String(e), 'docMsgs', 'SaveError')
       }
+      waiters.forEach((resolve) => resolve())
     }
   }
 
