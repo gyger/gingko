@@ -45,10 +45,11 @@ bun run tauri:dev                   # or tauri:build for installers
 ```
 
 `client/bun.lockb` is binary and conflicts whenever upstream changes
-dependencies. Don't try to merge it: take upstream's version, run `bun i` so
-it picks up the Tauri dependencies from `client/package.json` again, and
-`stg refresh` the result into the patch that added those dependencies
-(`tauri-desktop-app`).
+dependencies. Don't try to merge it: take upstream's version
+(`git checkout --ours client/bun.lockb` during a StGit conflict), run
+`bun install --lockfile-only` in `client/` so it picks up the Tauri
+dependencies from `client/package.json` again, and `stg refresh` the result
+into the patch that added those dependencies (`tauri-desktop-app`).
 
 ## Patches are intentions, not diffs
 
