@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-commit-data"
+description = "Enables the commit_data command without any pre-configured scope."
+commands.allow = ["commit_data"]
+
+[[permission]]
+identifier = "deny-commit-data"
+description = "Denies the commit_data command without any pre-configured scope."
+commands.deny = ["commit_data"]
