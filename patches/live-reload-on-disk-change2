@@ -1,0 +1,33 @@
+Bottom: 7e903b50faa064e9fad22fe1609c3457014e7cfa
+Top:    bb0c023df2d022e0c714a364efbd2763631bf39c
+Author: Samuel Gyger <samuel@gyger.tech>
+Date:   2026-09-26 11:43:55 +0200
+
+Live-reload documents when the file changes on disk
+
+Purpose:
+Let another editor or an agent modify an open .gkw file and have the
+open window follow, without losing the user's own unsaved edits.
+
+Approach:
+- Rust watches each open document's file with notify and tells
+  external modifications apart from the app's own saves by content
+  hash. External changes reach the renderer as a 'file-changed' event
+  and Elm as FileChangedOnDisk, which re-parses and swaps the working
+  tree.
+- If the document has unsaved edits (or a card is being edited), the
+  user is asked before reloading.
+- Parsing goes through one parseFileData fallback, used both for live
+  reload and for opening files: content without <gingko-card> tags
+  (plain markdown, unparseable data) loads as a single card instead of
+  an empty document, which the first edit would otherwise write back
+  over the file.
+
+Constraints:
+- Never overwrite unsaved in-app edits without asking.
+- The app's own saves must not trigger a reload.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+Generated with AI
+
+Co-Authored-By: AI <ai@example.com>

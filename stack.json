@@ -1,20 +1,19 @@
 {
   "version": 5,
-  "prev": "0b63cbfe520ecaa4cfc8e0be79b83273b1fcff8e",
-  "head": "4ef29460fec5ef8b7f030f308cb8d97ea00f461e",
+  "prev": "8674f9047bd1e1e789153ba8d6b8215c48cddd69",
+  "head": "714c7564579b63922bad5dddc930a964b30b712b",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app2",
     "legacy-gko-converter",
     "desktop-themes-and-shortcut-tray2",
-    "live-reload-on-disk-change"
+    "live-reload-on-disk-change2"
   ],
   "unapplied": [
     "fix-save-as-untitled",
     "show-save-failures",
     "save-as-writes-current-content",
-    "fix-save-as-self-and-exit",
-    "load-unparseable-as-single-card"
+    "fix-save-as-self-and-exit"
   ],
   "hidden": [],
   "patches": {
@@ -30,11 +29,8 @@
     "legacy-gko-converter": {
       "oid": "bddbb003499c7cc91e12115245b2a5bb88a5ba8a"
     },
-    "live-reload-on-disk-change": {
-      "oid": "4ef29460fec5ef8b7f030f308cb8d97ea00f461e"
-    },
-    "load-unparseable-as-single-card": {
-      "oid": "787b7cb574f9e439a045c9a47f8624ff0841e3b9"
+    "live-reload-on-disk-change2": {
+      "oid": "714c7564579b63922bad5dddc930a964b30b712b"
     },
     "overlay-workflow": {
       "oid": "60ccd7dc4c33f1c5487435e88fdc2b0920f6d614"
