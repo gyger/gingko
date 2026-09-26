@@ -92,16 +92,18 @@ Caveats, so nobody over-reads this table:
 - **Not run:** the app itself (`tauri dev` / launching the binary — no
   display), `tauri build` bundling, the Playwright e2e suite (needs the built
   `server/` sibling, below), and anything on Windows or macOS.
-- **Linux icon — pre-existing, not a merge issue.** On Linux,
-  `tauri::generate_context!()` panics with
-  `failed to open icon …/src-tauri/icons/icon.png`, because
-  `tauri.conf.json`'s `bundle.icon` lists only `../build/icon.ico` and
-  `../build/icon.icns` and Tauri falls back to `icons/icon.png` for the window
-  icon. `client/src-tauri/` is byte-identical to `taudesktop` (`822b261`), so
-  this fails the same way there. The Rust results above used a temporary
-  `icons/icon.png` (a copy of `build/sources/raster-image_256x256.png`), which
-  was not committed. Fix, when Linux matters: add a PNG to `bundle.icon`, or
-  generate the icon set with `bun tauri icon build/sources/raster-image_1024x1024.png`.
+- **Linux icon — pre-existing, fixed afterwards.** On Linux,
+  `tauri::generate_context!()` panicked with
+  `failed to open icon …/src-tauri/icons/icon.png`: `bundle.icon` listed only
+  `../build/icon.ico` / `../build/icon.icns`, and on Linux Tauri takes the
+  first `.png` in that list as the window icon, falling back to
+  `icons/icon.png`. `client/src-tauri/` was byte-identical to `taudesktop`
+  (`822b261`), so the problem was not caused by the merge. The results above
+  used a temporary `icons/icon.png`. A follow-up commit adds the existing RGBA
+  PNGs from `build/sources/` (256, 32, 128, 512 px; 256 comes first so it
+  becomes the window icon) to `bundle.icon`, and after that `cargo build`
+  succeeds on Linux with no `icons/` directory. The `.deb`/AppImage bundling
+  step (`tauri build`) that also reads these PNGs has not been run.
 - `src/tauri/support.js` requires `client/config.js`, so `tauri:frontend` also
   needs `cp config-example.js config.js` first (this was already true on
   `taudesktop`).
@@ -157,7 +159,6 @@ The Tauri app itself is unaffected — it is local-file-only and never talks to
   workflow under `client/.github/workflows/` will silently never run. The
   existing `client/.github/workflows/build.yml` is the old Electron
   release job and is currently inert.
-- **Linux window icon** — see the caveat under "Compiled and tested" above.
 - Decide what to do with `client/app/` and the Electron scripts in
   `client/package.json` now that the Tauri app supersedes them.
 
