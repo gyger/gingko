@@ -1,12 +1,15 @@
 {
   "version": 5,
-  "prev": "c50e7f8d329063798932e4ec38ddbe9b4e1415a7",
-  "head": "db3a5b411c1bd74a211b771852159e9e486ca155",
+  "prev": "fed8dc80d2eb15ce71cd8507375f47f89b034f7a",
+  "head": "82e3dcbfac249f58bba8d58e85e3f130f1ef26fb",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
     "fix-empty-doc-windows",
     "tauri-production-build",
+    "focus-already-open-window"
+  ],
+  "unapplied": [
     "legacy-gko-converter",
     "desktop-themes-and-shortcut-tray",
     "polish-shortcut-tray",
@@ -15,13 +18,11 @@
     "show-save-failures",
     "shortcut-tray-default-closed",
     "save-as-writes-current-content",
-    "focus-already-open-window",
-    "restrict-backend-commands",
     "fix-save-as-self-and-exit",
     "load-unparseable-as-single-card",
+    "restrict-backend-commands",
     "tauri-linux-png-icons"
   ],
-  "unapplied": [],
   "hidden": [],
   "patches": {
     "desktop-themes-and-shortcut-tray": {
@@ -37,7 +38,7 @@
       "oid": "39bf06d88cfecdbdb3b3283b67b60828de06c448"
     },
     "focus-already-open-window": {
-      "oid": "2aa453cdb33f22f5a996c2e8f96047901bbfd4e4"
+      "oid": "82e3dcbfac249f58bba8d58e85e3f130f1ef26fb"
     },
     "legacy-gko-converter": {
       "oid": "bad7291838c5af03ec0983bbb4bd09ccaefc386b"
