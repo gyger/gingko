@@ -1,7 +1,7 @@
-Bottom: 2a95aef998ce9aea7969b4d7d5e1c165fbb8eb9b
-Top:    a1fed07212cc8cfb8662d4597404c1bf8d8b7d1e
+Bottom: c3e51e1a6c65999d08683619b3fdb8229cf3c372
+Top:    8016f900747b9c89f40a25944d3950cce2b13252
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 13:40:05 +0200
+Date:   2026-09-26 18:34:04 +0200
 
 Enable themes and the keyboard-shortcut tray in the desktop app
 
