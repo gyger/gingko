@@ -1,7 +1,7 @@
 Bottom: 6517249bfcad07b911dc1738429ddbac6566bb73
 Top:    6bf19ae0bf678eb952b0b581632efb5e49623d40
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 12:33:50 +0200
+Date:   2026-09-26 12:36:42 +0200
 
 Make Save, Save As and Exit reliable in the desktop app
 
