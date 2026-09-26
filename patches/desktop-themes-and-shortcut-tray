@@ -1,7 +1,7 @@
 Bottom: b5f2f9f6625c2d32350a64e88ed5e217255f9302
 Top:    69ddce2cf8aa95a9c9ada5ceb11dcb1c909ea0c8
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 13:27:34 +0200
+Date:   2026-09-26 13:27:35 +0200
 
 Enable themes and the keyboard-shortcut tray in the desktop app
 
@@ -18,7 +18,8 @@ Approach:
   documents don't open with the tray showing.
 - Desktop layout (desktop.css): the desktop has no header bar, so the
   collapsed tray icon is pinned to the top edge (the web app's 40px
-  offset left it floating); the save indicator sits left of the toggle
+  offset left it floating); the open tray has a fixed width so the
+  document doesn't shift when its shortcut list changes; the save indicator sits left of the toggle
   icon and disappears behind the open tray panel (z-index). Toggling the
   tray closes any open tooltip, as in the web app.
 
