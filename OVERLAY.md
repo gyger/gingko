@@ -158,12 +158,15 @@ git overlay-build                   # = git tag -f build overlay && git push -f 
 git overlay-build <commit>          # or build another commit
 ```
 
-There is no versioning: each build replaces the release on the `build`
-tag, so the latest installer is always at
+There is no versioning: each build replaces the previous one. The
+installer is attached to a **draft** release on the `build` tag, which
+only people with write access to the fork can see: download
+`Gingko-Writer-Setup.exe` from the fork's Releases page
+(https://github.com/gyger/gingko/releases) while logged in. The fork's
+code and the Actions logs stay public.
 
-    https://github.com/gyger/gingko/releases/download/build/Gingko-Writer-Setup.exe
-
-Actions must be enabled for the fork.
+Actions must be enabled for the fork. A tag pushed while Actions was off
+doesn't build later; run `git overlay-build` again.
 
 ### Pick up changes made elsewhere
 
