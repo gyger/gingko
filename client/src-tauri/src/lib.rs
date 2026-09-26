@@ -223,14 +223,9 @@ fn start_watching(app: &AppHandle, label: &str) {
     use notify::{EventKind, RecursiveMode, Watcher};
 
     let state: State<AppState> = app.state();
-    let Some(path) = state
-        .docs
-        .lock()
-        .unwrap()
-        .get(label)
-        .map(|d| d.file_path.clone())
-    else {
-        return;
+    let path = match state.docs.lock().unwrap().get(label) {
+        Some(doc) => doc.file_path.clone(),
+        None => return,
     };
     let Some(dir) = path.parent().map(PathBuf::from) else {
         return;
