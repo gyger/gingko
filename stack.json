@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "731189af006ad4cc6a2d600b4d3a1fbe2818014b",
-  "head": "c00891b92d5d244cdc61ca3a428c68c937d781bd",
+  "prev": "beec10f4de7f8f4a72c37cc62f88c22a2936fe1c",
+  "head": "db86c3b5c9fd61c0001076245de88eb0845c3bb8",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -16,8 +16,7 @@
     "shortcut-tray-default-closed",
     "save-as-writes-current-content",
     "focus-already-open-window",
-    "restrict-backend-commands",
-    "refresh-temp"
+    "restrict-backend-commands"
   ],
   "unapplied": [
     "fix-save-as-self-and-exit",
@@ -56,11 +55,8 @@
     "polish-shortcut-tray": {
       "oid": "6efc76c1d697c6ec8de59e5abe57ec582171e231"
     },
-    "refresh-temp": {
-      "oid": "c00891b92d5d244cdc61ca3a428c68c937d781bd"
-    },
     "restrict-backend-commands": {
-      "oid": "c7fcac8da122896d39d03ca1c571b2eea6250fdb"
+      "oid": "db86c3b5c9fd61c0001076245de88eb0845c3bb8"
     },
     "save-as-writes-current-content": {
       "oid": "598725a2a46abb915fdaa3c3190a962731fa0e74"
