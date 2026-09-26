@@ -146,6 +146,19 @@ fast-forwards. That makes the stack ref the concurrency guard. If someone
 else changed the published stack in the meantime, the push is rejected, and
 thanks to `--atomic` the branch isn't updated either.
 
+### Windows installer
+
+Every push to `overlay` on the fork (i.e. every `git overlay-publish`)
+builds the Windows installer on GitHub (patch `windows-installer-ci`,
+`.github/workflows/overlay-windows-build.yml`). There is no versioning:
+the build replaces the rolling prerelease `overlay-build`, so the latest
+installer is always at
+
+    https://github.com/gyger/gingko/releases/download/overlay-build/Gingko-Writer-Setup.exe
+
+It can also be started by hand under Actions → Overlay Windows Build →
+Run workflow. Actions must be enabled for the fork.
+
 ### Pick up changes made elsewhere
 
 ```bash
