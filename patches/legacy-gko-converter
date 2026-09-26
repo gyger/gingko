@@ -1,7 +1,7 @@
 Bottom: a516bc83bba7b6ad48631f07ded67d88ea617fbe
 Top:    35bf2feff41659ad84223ce48c22ec071d866dcd
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:05:26 +0200
+Date:   2026-09-26 19:05:27 +0200
 
 Add converter for legacy Gingko Desktop 2.x .gko archives
 
@@ -22,3 +22,5 @@ Constraints:
 - Never modify the original file: the converted document opens as a new
   Untitled document.
 - Current-format .gko/.gkw files take the normal open path.
+
+Notice: vibe-coded
