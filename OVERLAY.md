@@ -11,7 +11,7 @@ This file is itself the first patch of the stack (`overlay-workflow`).
 
 | branch    | contents                                                       |
 |-----------|----------------------------------------------------------------|
-| `master`  | follows upstream `upstream/master` exactly, never committed to |
+| `master`  | follows `upstream/master` exactly, never committed to |
 | `overlay` | upstream `master` + the StGit patch stack, the branch to build |
 
 Remotes: `upstream` is `gingko/client`, `origin` is the personal fork
