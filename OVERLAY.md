@@ -11,19 +11,19 @@ This file is itself the first patch of the stack (`overlay-workflow`).
 
 | branch    | contents                                                       |
 |-----------|----------------------------------------------------------------|
-| `master`  | follows upstream `origin/master` exactly, never committed to   |
+| `master`  | follows upstream `upstream/master` exactly, never committed to |
 | `overlay` | upstream `master` + the StGit patch stack, the branch to build |
 
-The upstream remote here is `origin` (`gingko/client`). A personal fork can
-be added as a second remote for publishing the overlay (see below).
+Remotes: `upstream` is `gingko/client`, `origin` is the personal fork
+(`gyger/gingko`), where the overlay is published.
 
 ## Updating to the latest upstream
 
 ```bash
 git switch overlay
-git fetch origin
-git switch master && git merge --ff-only origin/master && git switch overlay
-stg rebase origin/master      # pops all patches, moves base, re-pushes them
+git fetch upstream
+git switch master && git merge --ff-only upstream/master && git switch overlay
+stg rebase upstream/master    # pops all patches, moves base, re-pushes them
 ```
 
 If a patch no longer applies, `stg rebase` stops at it with conflict markers:
@@ -89,12 +89,11 @@ empty; remove it with `stg delete`.
 
 ## Publishing
 
-The `overlay` branch is rewritten on every rebase, so publishing to a fork
+The `overlay` branch is rewritten on every rebase, so publishing it to the fork
 needs a force push:
 
 ```bash
-git remote add fork https://github.com/gyger/ginko-client.git   # once
-git push --force-with-lease fork overlay
+git push --force-with-lease origin overlay
 ```
 
 `stg export -d patches/` writes the stack as plain patch files, e.g. for
