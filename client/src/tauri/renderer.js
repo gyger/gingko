@@ -1,6 +1,5 @@
 // Tauri port of src/electron/renderer.js — the document window.
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import commitTree from './commit.js'
 
@@ -27,24 +26,7 @@ const localStore = {
   }
 }
 
-// Init Elm
 let gingkoElectron
-
-const init = async function (filePath, fileData, fileSettings, undoData, isUntitledArg) {
-  const timestamp = Date.now()
-  const globalData = {
-    seed: timestamp,
-    currentTime: timestamp,
-    isMac: navigator.platform.toUpperCase().indexOf('MAC') >= 0
-  }
-  gingkoElectron = window.Elm.Electron.Electron.init({
-    flags: { filePath, fileData, fileSettings, undoData, globalData, isUntitled: isUntitledArg }
-  })
-
-  gingkoElectron.ports.infoForOutside.subscribe(function (elmdata) {
-    fromElm(elmdata.tag, elmdata.data)
-  })
-}
 
 const objectsToElmData = (objs) => {
   const groups = {}
@@ -60,25 +42,36 @@ const objectsToElmData = (objs) => {
 
 async function start () {
   const docState = await invoke('get_doc_state')
-  if (docState.fileData !== null) {
-    DIRTY = false
-  } else {
-    DIRTY = true
-  }
+  DIRTY = docState.fileData === null
   isUntitled = docState.isUntitled
-  await init(
-    docState.filePath,
-    docState.fileData,
-    docState.fileSettings,
-    objectsToElmData(docState.undoData),
-    docState.isUntitled
-  )
+
+  const timestamp = Date.now()
+  gingkoElectron = window.Elm.Electron.Electron.init({
+    flags: {
+      filePath: docState.filePath,
+      fileData: docState.fileData,
+      fileSettings: docState.fileSettings,
+      undoData: objectsToElmData(docState.undoData),
+      globalData: {
+        seed: timestamp,
+        currentTime: timestamp,
+        isMac: navigator.platform.toUpperCase().indexOf('MAC') >= 0
+      },
+      isUntitled
+    }
+  })
+
+  gingkoElectron.ports.infoForOutside.subscribe((elmdata) => {
+    fromElm(elmdata.tag, elmdata.data)
+  })
 }
 start()
 
 /* ==== Menu events from the backend ==== */
 
-listen('menu-clicked', async (event) => {
+const currentWindow = getCurrentWindow()
+
+currentWindow.listen('menu-clicked', async (event) => {
   switch (event.payload) {
     case 'menu:save':
     case 'menu:saveas':
@@ -123,7 +116,7 @@ async function saveThisAs () {
 
 /* ==== Window close handling ==== */
 
-getCurrentWindow().onCloseRequested(async (event) => {
+currentWindow.onCloseRequested(async (event) => {
   if (closing) { return }
   if (isUntitled) {
     event.preventDefault()

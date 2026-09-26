@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha1::{Digest, Sha1};
 use tauri::menu::{IsMenuItem, Menu, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
-use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Wry};
+use tauri::{
+    AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Wry,
+};
 use tauri_plugin_dialog::DialogExt;
 
 /* ==== State ==== */
@@ -36,6 +38,10 @@ struct AppState {
     docs: Mutex<HashMap<String, DocState>>,
     doc_counter: Mutex<u32>,
     menu_ctx: Mutex<MenuContext>,
+    // Held while a document window is being opened, so that two concurrent
+    // requests (e.g. a double-click in the home window) can't open the same
+    // file twice.
+    opening: Mutex<()>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -50,18 +56,18 @@ struct RecentDoc {
 
 /* ==== Helpers ==== */
 
-fn now_ms() -> f64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
+fn to_ms(time: SystemTime) -> Option<f64> {
+    time.duration_since(UNIX_EPOCH)
+        .ok()
         .map(|d| d.as_millis() as f64)
-        .unwrap_or(0.0)
+}
+
+fn now_ms() -> f64 {
+    to_ms(SystemTime::now()).unwrap_or(0.0)
 }
 
 fn settings_path(app: &AppHandle) -> PathBuf {
-    let dir = app
-        .path()
-        .app_config_dir()
-        .expect("no app config dir");
+    let dir = app.path().app_config_dir().expect("no app config dir");
     let _ = fs::create_dir_all(&dir);
     dir.join("settings.json")
 }
@@ -94,44 +100,23 @@ fn set_recent_documents(app: &AppHandle, docs: &[RecentDoc]) {
 }
 
 fn add_to_recent_documents(app: &AppHandle, file_path: &Path) {
-    let meta = fs::metadata(file_path);
-    let (birthtime_ms, mtime_ms) = match meta {
-        Ok(m) => (
-            m.created()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_millis() as f64)
-                .unwrap_or_else(now_ms),
-            m.modified()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_millis() as f64)
-                .unwrap_or_else(now_ms),
-        ),
-        Err(_) => (now_ms(), now_ms()),
-    };
-    let name = file_path
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_default();
-    let path_str = file_path.to_string_lossy().to_string();
+    let meta = fs::metadata(file_path).ok();
+    let meta_ms = |time: Option<SystemTime>| time.and_then(to_ms).unwrap_or_else(now_ms);
+    let path = file_path.to_string_lossy().to_string();
     let entry = RecentDoc {
-        name,
-        path: path_str.clone(),
-        birthtime_ms,
+        name: file_path
+            .file_stem()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or_default(),
+        path: path.clone(),
+        birthtime_ms: meta_ms(meta.as_ref().and_then(|m| m.created().ok())),
         atime_ms: now_ms(),
-        mtime_ms,
+        mtime_ms: meta_ms(meta.as_ref().and_then(|m| m.modified().ok())),
     };
-    let mut docs: Vec<RecentDoc> = get_recent_documents(app)
-        .into_iter()
-        .filter(|rd| rd.path != path_str)
-        .collect();
+    let mut docs = get_recent_documents(app);
+    docs.retain(|rd| rd.path != path);
     docs.push(entry);
     set_recent_documents(app, &docs);
-}
-
-fn temp_dir() -> PathBuf {
-    std::env::temp_dir()
 }
 
 fn date_hash_strings() -> (String, String) {
@@ -142,7 +127,10 @@ fn date_hash_strings() -> (String, String) {
     // ISO date (yyyy-mm-dd) from days since epoch, no chrono dependency.
     let days = ms / 86_400_000;
     let (y, m, d) = civil_from_days(days as i64);
-    (format!("{:04}-{:02}-{:02}", y, m, d), hash[0..6].to_string())
+    (
+        format!("{:04}-{:02}-{:02}", y, m, d),
+        hash[0..6].to_string(),
+    )
 }
 
 // Howard Hinnant's algorithm: days since 1970-01-01 -> (y, m, d)
@@ -206,10 +194,13 @@ fn load_undo_data(app: &AppHandle, file_path: &Path) -> HashMap<String, Value> {
         .unwrap_or_default()
 }
 
-fn persist_undo_data(app: &AppHandle, file_path: &Path, data: &HashMap<String, Value>) {
-    if let Ok(s) = serde_json::to_string(data) {
-        let _ = fs::write(undo_store_path(app, file_path), s);
-    }
+fn persist_undo_data(
+    app: &AppHandle,
+    file_path: &Path,
+    data: &HashMap<String, Value>,
+) -> Result<(), String> {
+    let s = serde_json::to_string(data).map_err(|e| e.to_string())?;
+    fs::write(undo_store_path(app, file_path), s).map_err(|e| e.to_string())
 }
 
 fn title_text(file_path: &Path) -> String {
@@ -225,7 +216,16 @@ fn title_text(file_path: &Path) -> String {
 /* ==== Menu ==== */
 
 fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
-    let recent_docs = get_recent_documents(app);
+    let mut recent_menu = SubmenuBuilder::new(app, "Open &Recent");
+    for (idx, rd) in get_recent_documents(app).iter().enumerate() {
+        recent_menu = recent_menu.item(
+            &MenuItemBuilder::with_id(
+                format!("recent:{}", rd.path),
+                format!("&{}.  {}", idx + 1, rd.name),
+            )
+            .build(app)?,
+        );
+    }
 
     let mut file_menu = SubmenuBuilder::new(app, "&File")
         .item(
@@ -237,25 +237,8 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
             &MenuItemBuilder::with_id("menu:open", "&Open...")
                 .accelerator("CmdOrCtrl+O")
                 .build(app)?,
-        );
-
-    {
-        let mut recent_menu = SubmenuBuilder::new(app, "Open &Recent");
-        let mut items: Vec<tauri::menu::MenuItem<Wry>> = vec![];
-        for (idx, rd) in recent_docs.iter().enumerate() {
-            items.push(
-                MenuItemBuilder::with_id(
-                    format!("recent:{}", rd.path),
-                    format!("&{}.  {}", idx + 1, rd.name),
-                )
-                .build(app)?,
-            );
-        }
-        for item in items.iter() {
-            recent_menu = recent_menu.item(item);
-        }
-        file_menu = file_menu.item(&recent_menu.build()?);
-    }
+        )
+        .item(&recent_menu.build()?);
 
     if ctx.has_doc {
         file_menu = file_menu
@@ -298,16 +281,27 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
             .item(&PredefinedMenuItem::paste(app, Some("&Paste"))?)
             .build()?
     } else {
-        // Note: no accelerators here — the renderer's Mousetrap bindings handle
-        // these keys, so menu accelerators would double-fire (and swallow keys
-        // inside textareas). Menu items remain clickable.
+        // No accelerators: the renderer's Mousetrap bindings handle these keys,
+        // menu accelerators would fire twice (and swallow keys in textareas).
         SubmenuBuilder::new(app, "&Edit")
-            .item(&MenuItemBuilder::with_id("menu:undo", "&Undo/Redo (Version History)").build(app)?)
+            .item(
+                &MenuItemBuilder::with_id("menu:undo", "&Undo/Redo (Version History)")
+                    .build(app)?,
+            )
             .separator()
             .item(&MenuItemBuilder::with_id("menu:cut", "Cu&t current subtree").build(app)?)
             .item(&MenuItemBuilder::with_id("menu:copy", "&Copy current subtree").build(app)?)
-            .item(&MenuItemBuilder::with_id("menu:paste", "&Paste subtree below current card").build(app)?)
-            .item(&MenuItemBuilder::with_id("menu:pasteinto", "&Paste subtree as child of current card").build(app)?)
+            .item(
+                &MenuItemBuilder::with_id("menu:paste", "&Paste subtree below current card")
+                    .build(app)?,
+            )
+            .item(
+                &MenuItemBuilder::with_id(
+                    "menu:pasteinto",
+                    "&Paste subtree as child of current card",
+                )
+                .build(app)?,
+            )
             .build()?
     };
 
@@ -320,15 +314,10 @@ fn build_menu(app: &AppHandle, ctx: &MenuContext) -> tauri::Result<Menu<Wry>> {
         .item(&MenuItemBuilder::with_id("menu:devtools", "Toggle Developer Tools").build(app)?)
         .build()?;
 
-    let menu = Menu::with_items(
+    Menu::with_items(
         app,
-        &[
-            &file_menu as &dyn IsMenuItem<Wry>,
-            &edit_menu,
-            &help_menu,
-        ],
-    )?;
-    Ok(menu)
+        &[&file_menu as &dyn IsMenuItem<Wry>, &edit_menu, &help_menu],
+    )
 }
 
 fn apply_menu(app: &AppHandle) {
@@ -359,38 +348,23 @@ fn focused_doc_window(app: &AppHandle) -> Option<WebviewWindow> {
 fn open_doc_off_main(app: &AppHandle, file_path: Option<PathBuf>, close_home: bool) {
     let app = app.clone();
     std::thread::spawn(move || {
-        let from_home = if close_home { app.get_webview_window("home") } else { None };
-        if create_doc_window(&app, file_path, None).is_ok() {
-            if let Some(home) = from_home {
-                let _ = home.destroy();
-            }
-        }
-    });
-}
-
-fn open_modal_off_main(app: &AppHandle, kind: &str) {
-    let app = app.clone();
-    let kind = kind.to_string();
-    std::thread::spawn(move || {
-        open_modal_window(&app, &kind);
+        let _ = if close_home {
+            open_doc(&app, file_path, None)
+        } else {
+            create_doc_window(&app, file_path, None)
+        };
     });
 }
 
 fn handle_menu_event(app: &AppHandle, id: &str) {
     match id {
-        "menu:new" => {
-            open_doc_off_main(app, None, true);
-        }
-        "menu:open" => {
-            open_file_dialog(app);
-        }
-        "menu:exit" => {
-            app.exit(0);
-        }
-        "menu:shortcuts" => open_modal_off_main(app, "shortcuts"),
-        "menu:videos" => open_modal_off_main(app, "videos"),
-        "menu:faq" => open_modal_off_main(app, "faq"),
-        "menu:support" => open_modal_off_main(app, "support"),
+        "menu:new" => open_doc_off_main(app, None, true),
+        "menu:open" => open_file_dialog(app),
+        "menu:exit" => app.exit(0),
+        "menu:shortcuts" => open_modal(app, "shortcuts"),
+        "menu:videos" => open_modal(app, "videos"),
+        "menu:faq" => open_modal(app, "faq"),
+        "menu:support" => open_modal(app, "support"),
         "menu:devtools" => {
             if let Some(win) = focused_doc_window(app) {
                 win.open_devtools();
@@ -401,25 +375,26 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 let _ = win.close();
             }
         }
-        id if id.starts_with("recent:") => {
-            let path = id.trim_start_matches("recent:").to_string();
-            open_doc_off_main(app, Some(PathBuf::from(path)), true);
-        }
-        // Forwarded to the focused document window's JS side.
+        // Handled by the focused document's renderer. emit() would broadcast
+        // to every window.
         "menu:save" | "menu:saveas" | "menu:export" | "menu:undo" | "menu:cut" | "menu:copy"
         | "menu:paste" | "menu:pasteinto" => {
             if let Some(win) = focused_doc_window(app) {
-                let _ = win.emit("menu-clicked", id);
+                let _ = win.emit_to(win.label(), "menu-clicked", id);
             }
         }
-        _ => {}
+        _ => {
+            if let Some(path) = id.strip_prefix("recent:") {
+                open_doc_off_main(app, Some(PathBuf::from(path)), true);
+            }
+        }
     }
 }
 
 fn open_file_dialog(app: &AppHandle) {
     let app = app.clone();
-    // Runs the blocking dialog and the window creation on a worker thread;
-    // both would deadlock on the main thread (wry#583).
+    // Off the main thread for the same reason as open_doc_off_main; the
+    // blocking dialog would deadlock there, too.
     std::thread::spawn(move || {
         let picked = app
             .dialog()
@@ -430,17 +405,12 @@ fn open_file_dialog(app: &AppHandle) {
             .add_filter("All Files", &["*"])
             .blocking_pick_file();
         if let Some(fp) = picked.and_then(|f| f.into_path().ok()) {
-            let from_home = app.get_webview_window("home");
-            if create_doc_window(&app, Some(fp), None).is_ok() {
-                if let Some(home) = from_home {
-                    let _ = home.destroy();
-                }
-            }
+            let _ = open_doc(&app, Some(fp), None);
         }
     });
 }
 
-fn open_modal_window(app: &AppHandle, kind: &str) {
+fn open_modal(app: &AppHandle, kind: &'static str) {
     let (url, title, w, h) = match kind {
         "shortcuts" => ("shortcuts.html", "Keyboard Shortcuts", 1000.0, 800.0),
         "videos" => ("videos.html", "Help Videos", 800.0, 400.0),
@@ -448,18 +418,35 @@ fn open_modal_window(app: &AppHandle, kind: &str) {
         "support" => ("support.html", "Contact Support", 800.0, 445.0),
         _ => return,
     };
-    let label = format!("modal-{}", kind);
-    if let Some(existing) = app.get_webview_window(&label) {
-        let _ = existing.set_focus();
-        return;
-    }
-    let _ = WebviewWindowBuilder::new(app, &label, WebviewUrl::App(url.into()))
-        .title(title)
-        .inner_size(w, h)
-        .build();
+    // Off the main thread, see open_doc_off_main.
+    let app = app.clone();
+    std::thread::spawn(move || {
+        let label = format!("modal-{}", kind);
+        if let Some(existing) = app.get_webview_window(&label) {
+            let _ = existing.set_focus();
+            return;
+        }
+        let _ = WebviewWindowBuilder::new(&app, &label, WebviewUrl::App(url.into()))
+            .title(title)
+            .inner_size(w, h)
+            .build();
+    });
 }
 
 /* ==== Doc window lifecycle ==== */
+
+// Opens a document window in place of the home window.
+fn open_doc(
+    app: &AppHandle,
+    file_path: Option<PathBuf>,
+    init_file_data: Option<String>,
+) -> Result<(), String> {
+    create_doc_window(app, file_path, init_file_data)?;
+    if let Some(home) = app.get_webview_window("home") {
+        let _ = home.destroy();
+    }
+    Ok(())
+}
 
 fn create_doc_window(
     app: &AppHandle,
@@ -467,6 +454,7 @@ fn create_doc_window(
     init_file_data: Option<String>,
 ) -> Result<(), String> {
     let state: State<AppState> = app.state();
+    let _opening = state.opening.lock().unwrap();
 
     // A file can only be open once: surface the window that already has it.
     if let Some(ref fp) = file_path {
@@ -493,23 +481,23 @@ fn create_doc_window(
 
     let (file_path, file_data) = match file_path {
         None => {
-            // Initialize new document in temp
-            let fp = temp_dir().join(format!("Untitled-{}-{}.gkw", date_string, file_hash));
+            let fp =
+                std::env::temp_dir().join(format!("Untitled-{}-{}.gkw", date_string, file_hash));
             let _ = fs::write(swp_path(&fp), "");
             (fp, init_file_data)
         }
         Some(fp) => {
-            // Save backup copy
+            let data = fs::read_to_string(&fp).map_err(|e| e.to_string())?;
+
+            // Backup copy in temp, swap copy next to the file.
             let base = fp
                 .file_stem()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default();
-            let backup = temp_dir().join(format!("{}-{}-{}.gkw.bak", base, date_string, file_hash));
-            fs::copy(&fp, &backup).map_err(|e| e.to_string())?;
-
-            // Open swap copy
+            let backup = std::env::temp_dir()
+                .join(format!("{}-{}-{}.gkw.bak", base, date_string, file_hash));
+            fs::copy(&fp, backup).map_err(|e| e.to_string())?;
             fs::copy(&fp, swp_path(&fp)).map_err(|e| e.to_string())?;
-            let data = fs::read_to_string(swp_path(&fp)).map_err(|e| e.to_string())?;
 
             add_to_recent_documents(app, &fp);
             (fp, Some(data))
@@ -524,18 +512,15 @@ fn create_doc_window(
         format!("doc-{}", *counter)
     };
 
-    {
-        let mut docs = state.docs.lock().unwrap();
-        docs.insert(
-            label.clone(),
-            DocState {
-                file_path: file_path.clone(),
-                is_untitled,
-                file_data,
-                undo_data,
-            },
-        );
-    }
+    state.docs.lock().unwrap().insert(
+        label.clone(),
+        DocState {
+            file_path: file_path.clone(),
+            is_untitled,
+            file_data,
+            undo_data,
+        },
+    );
 
     {
         let mut ctx = state.menu_ctx.lock().unwrap();
@@ -557,8 +542,8 @@ fn create_doc_window(
 
 fn cleanup_doc_window(app: &AppHandle, label: &str) {
     let state: State<AppState> = app.state();
-    let mut docs = state.docs.lock().unwrap();
-    if let Some(doc) = docs.remove(label) {
+    let doc = state.docs.lock().unwrap().remove(label);
+    if let Some(doc) = doc {
         let _ = fs::remove_file(swp_path(&doc.file_path));
     }
 }
@@ -596,7 +581,11 @@ struct DocInit {
 }
 
 #[tauri::command(async)]
-fn get_doc_state(app: AppHandle, window: WebviewWindow, state: State<AppState>) -> Result<DocInit, String> {
+fn get_doc_state(
+    app: AppHandle,
+    window: WebviewWindow,
+    state: State<AppState>,
+) -> Result<DocInit, String> {
     let mut docs = state.docs.lock().unwrap();
     let doc = docs
         .get_mut(window.label())
@@ -604,7 +593,7 @@ fn get_doc_state(app: AppHandle, window: WebviewWindow, state: State<AppState>) 
 
     let file_settings = load_settings(&app)
         .get("fileSettings")
-        .and_then(|fs_| fs_.get(doc.file_path.to_string_lossy().as_ref()))
+        .and_then(|s| s.get(doc.file_path.to_string_lossy().as_ref()))
         .cloned()
         .unwrap_or(Value::Null);
 
@@ -631,22 +620,12 @@ fn get_doc_state(app: AppHandle, window: WebviewWindow, state: State<AppState>) 
 
 #[tauri::command(async)]
 fn new_document(app: AppHandle) -> Result<(), String> {
-    let from_home = app.get_webview_window("home");
-    create_doc_window(&app, None, None)?;
-    if let Some(home) = from_home {
-        let _ = home.destroy();
-    }
-    Ok(())
+    open_doc(&app, None, None)
 }
 
 #[tauri::command(async)]
 fn open_document(app: AppHandle, path: String) -> Result<(), String> {
-    let from_home = app.get_webview_window("home");
-    create_doc_window(&app, Some(PathBuf::from(path)), None)?;
-    if let Some(home) = from_home {
-        let _ = home.destroy();
-    }
-    Ok(())
+    open_doc(&app, Some(PathBuf::from(path)), None)
 }
 
 #[tauri::command(async)]
@@ -656,20 +635,13 @@ fn open_document_dialog(app: AppHandle) {
 
 #[tauri::command(async)]
 fn import_document(app: AppHandle, file_data: String) -> Result<(), String> {
-    let from_home = app.get_webview_window("home");
-    create_doc_window(&app, None, Some(file_data))?;
-    if let Some(home) = from_home {
-        let _ = home.destroy();
-    }
-    Ok(())
+    open_doc(&app, None, Some(file_data))
 }
 
 #[tauri::command(async)]
 fn remove_recent_document(app: AppHandle, path: String) {
-    let docs: Vec<RecentDoc> = get_recent_documents(&app)
-        .into_iter()
-        .filter(|rd| rd.path != path)
-        .collect();
+    let mut docs = get_recent_documents(&app);
+    docs.retain(|rd| rd.path != path);
     set_recent_documents(&app, &docs);
     apply_menu(&app);
 }
@@ -690,7 +662,6 @@ fn save_file(
     fs::write(&swp, &data).map_err(|e| e.to_string())?;
     fs::copy(&swp, &doc.file_path).map_err(|e| e.to_string())?;
 
-    let _ = window.set_title(&title_text(&doc.file_path));
     Ok((
         doc.file_path.to_string_lossy().to_string(),
         now_ms(),
@@ -706,43 +677,29 @@ fn save_as(
     new_path: String,
 ) -> Result<(String, f64, bool), String> {
     let new_path = PathBuf::from(new_path);
-    let label = window.label().to_string();
 
-    let orig_path = {
+    {
         let mut docs = state.docs.lock().unwrap();
         let doc = docs
-            .get_mut(&label)
-            .ok_or_else(|| format!("No doc state for window {}", label))?;
+            .get_mut(window.label())
+            .ok_or_else(|| format!("No doc state for window {}", window.label()))?;
+        let orig_path = &doc.file_path;
 
-        let orig_path = doc.file_path.clone();
-
-        // Copy current contents to the new location (+ swap file).
-        fs::copy(&orig_path, &new_path).map_err(|e| e.to_string())?;
-        fs::copy(&orig_path, swp_path(&new_path)).map_err(|e| e.to_string())?;
-
-        // Move undo history to the new key.
-        let old_undo = undo_store_path(&app, &orig_path);
-        let new_undo = undo_store_path(&app, &new_path);
-        if old_undo.exists() {
-            let _ = fs::copy(&old_undo, &new_undo);
-            let _ = fs::remove_file(&old_undo);
-        }
-
-        // Clean up the old swap file.
-        let _ = fs::remove_file(swp_path(&orig_path));
+        fs::copy(orig_path, &new_path).map_err(|e| e.to_string())?;
+        fs::copy(orig_path, swp_path(&new_path)).map_err(|e| e.to_string())?;
+        let _ = fs::rename(
+            undo_store_path(&app, orig_path),
+            undo_store_path(&app, &new_path),
+        );
+        let _ = fs::remove_file(swp_path(orig_path));
 
         doc.file_path = new_path.clone();
         doc.is_untitled = false;
-        orig_path
-    };
-    let _ = orig_path;
+    }
 
     add_to_recent_documents(&app, &new_path);
 
-    {
-        let mut ctx = state.menu_ctx.lock().unwrap();
-        ctx.is_untitled = false;
-    }
+    state.menu_ctx.lock().unwrap().is_untitled = false;
     apply_menu(&app);
 
     let _ = window.set_title(&title_text(&new_path));
@@ -763,21 +720,22 @@ fn commit_data(
         .get_mut(window.label())
         .ok_or_else(|| format!("No doc state for window {}", window.label()))?;
 
-    for obj in objects {
-        if let Some(id) = obj.get("_id").and_then(|v| v.as_str()).map(String::from) {
-            let mut stripped = obj.clone();
-            if let Some(map) = stripped.as_object_mut() {
-                map.remove("_id");
-            }
-            doc.undo_data.insert(id, stripped);
+    for mut obj in objects {
+        if let Some(Value::String(id)) = obj.as_object_mut().and_then(|m| m.remove("_id")) {
+            doc.undo_data.insert(id, obj);
         }
     }
-    persist_undo_data(&app, &doc.file_path, &doc.undo_data);
-    Ok(())
+    persist_undo_data(&app, &doc.file_path, &doc.undo_data)
 }
 
 #[tauri::command(async)]
-fn local_store_set(app: AppHandle, window: WebviewWindow, state: State<AppState>, key: String, value: Value) {
+fn local_store_set(
+    app: AppHandle,
+    window: WebviewWindow,
+    state: State<AppState>,
+    key: String,
+    value: Value,
+) {
     let path_str = {
         let docs = state.docs.lock().unwrap();
         match docs.get(window.label()) {
@@ -815,63 +773,50 @@ fn export_file(path: String, content: String) -> Result<(), String> {
 
 #[tauri::command(async)]
 fn export_docx(app: AppHandle, path: String, content: String) -> Result<(), String> {
-    let target = PathBuf::from(&path);
-    let tmp_md = temp_dir().join(format!(
-        "{}.md",
-        target
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| "export".into())
-    ));
+    let file_name = Path::new(&path)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "export".into());
+    let tmp_md = std::env::temp_dir().join(format!("{}.md", file_name));
     fs::write(&tmp_md, &content).map_err(|e| e.to_string())?;
 
-    // Prefer a bundled pandoc next to the executable; fall back to
-    // the dev-tree copy, then to pandoc on PATH.
-    let exe_dir = app
-        .path()
-        .resource_dir()
-        .ok()
-        .or_else(|| std::env::current_exe().ok().and_then(|p| p.parent().map(PathBuf::from)));
-    let candidates: Vec<PathBuf> = {
-        let mut v = vec![];
-        if let Some(dir) = exe_dir {
-            v.push(dir.join(if cfg!(windows) { "pandoc.exe" } else { "pandoc" }));
-        }
-        let dev_bin = if cfg!(target_os = "windows") {
-            "src/bin/win/pandoc.exe"
-        } else if cfg!(target_os = "macos") {
-            "src/bin/mac/pandoc"
-        } else {
-            "src/bin/linux/pandoc"
-        };
-        v.push(PathBuf::from("..").join(dev_bin));
-        v.push(PathBuf::from("pandoc"));
-        v
+    // Prefer a bundled pandoc, then the dev-tree copy, then pandoc on PATH.
+    let exe_dir = app.path().resource_dir().ok().or_else(|| {
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(PathBuf::from))
+    });
+    let (bundled, dev_bin) = if cfg!(target_os = "windows") {
+        ("pandoc.exe", "src/bin/win/pandoc.exe")
+    } else if cfg!(target_os = "macos") {
+        ("pandoc", "src/bin/mac/pandoc")
+    } else {
+        ("pandoc", "src/bin/linux/pandoc")
     };
+    let candidates = exe_dir
+        .map(|dir| dir.join(bundled))
+        .into_iter()
+        .chain([Path::new("..").join(dev_bin), PathBuf::from("pandoc")]);
 
-    let mut last_err = String::from("pandoc not found");
+    let mut result = Err("pandoc not found".to_string());
     for pandoc in candidates {
-        let result = std::process::Command::new(&pandoc)
+        result = match std::process::Command::new(&pandoc)
             .arg(&tmp_md)
             .arg("--from=gfm+hard_line_breaks")
             .arg("--to=docx")
             .arg(format!("--output={}", path))
-            .output();
-        match result {
-            Ok(out) if out.status.success() => {
-                let _ = fs::remove_file(&tmp_md);
-                return Ok(());
-            }
-            Ok(out) => {
-                last_err = String::from_utf8_lossy(&out.stderr).to_string();
-            }
-            Err(e) => {
-                last_err = e.to_string();
-            }
+            .output()
+        {
+            Ok(out) if out.status.success() => Ok(()),
+            Ok(out) => Err(String::from_utf8_lossy(&out.stderr).to_string()),
+            Err(e) => Err(e.to_string()),
+        };
+        if result.is_ok() {
+            break;
         }
     }
     let _ = fs::remove_file(&tmp_md);
-    Err(last_err)
+    result
 }
 
 // Three-button "Save changes?" dialog. Returns "save" | "discard" | "cancel".
@@ -890,7 +835,6 @@ fn ask_save_changes() -> String {
     }
 }
 
-// Pick a JSON file to import and return its contents.
 #[tauri::command(async)]
 fn import_json_dialog(window: WebviewWindow) -> Option<String> {
     window
@@ -904,7 +848,7 @@ fn import_json_dialog(window: WebviewWindow) -> Option<String> {
 
 #[tauri::command(async)]
 fn save_file_dialog(window: WebviewWindow, state: State<AppState>) -> Option<String> {
-    let default_path = {
+    let current_path = {
         let docs = state.docs.lock().unwrap();
         docs.get(window.label()).map(|d| d.file_path.clone())
     };
@@ -914,17 +858,13 @@ fn save_file_dialog(window: WebviewWindow, state: State<AppState>) -> Option<Str
         .add_filter("Gingko Writer Document", &["gkw"])
         .add_filter("Markdown Document", &["md"])
         .add_filter("All Files", &["*"]);
-    if let Some(dp) = default_path {
-        let in_temp = dp.starts_with(temp_dir());
-        if !in_temp {
-            builder = builder.set_file_name(
-                dp.file_name()
-                    .map(|s| s.to_string_lossy().to_string())
-                    .unwrap_or_default(),
-            );
-            if let Some(parent) = dp.parent() {
-                builder = builder.set_directory(parent);
-            }
+    // Untitled documents live in the temp dir; don't suggest saving there.
+    if let Some(path) = current_path.filter(|p| !p.starts_with(std::env::temp_dir())) {
+        if let Some(name) = path.file_name() {
+            builder = builder.set_file_name(name.to_string_lossy());
+        }
+        if let Some(dir) = path.parent() {
+            builder = builder.set_directory(dir);
         }
     }
     builder
@@ -934,7 +874,11 @@ fn save_file_dialog(window: WebviewWindow, state: State<AppState>) -> Option<Str
 }
 
 #[tauri::command(async)]
-fn export_file_dialog(window: WebviewWindow, state: State<AppState>, format: String) -> Option<String> {
+fn export_file_dialog(
+    window: WebviewWindow,
+    state: State<AppState>,
+    format: String,
+) -> Option<String> {
     let default_name = {
         let docs = state.docs.lock().unwrap();
         docs.get(window.label()).map(|d| {
@@ -959,21 +903,10 @@ fn export_file_dialog(window: WebviewWindow, state: State<AppState>, format: Str
         .map(|p| p.to_string_lossy().to_string())
 }
 
+// The Destroyed window event cleans up the document state.
 #[tauri::command(async)]
-fn close_document(app: AppHandle, window: WebviewWindow) {
-    cleanup_doc_window(&app, window.label());
+fn close_document(window: WebviewWindow) {
     let _ = window.destroy();
-}
-
-#[tauri::command(async)]
-fn open_modal(app: AppHandle, kind: String) {
-    open_modal_window(&app, &kind);
-}
-
-#[tauri::command(async)]
-fn open_external(app: AppHandle, url: String) {
-    use tauri_plugin_opener::OpenerExt;
-    let _ = app.opener().open_url(url, None::<String>);
 }
 
 /* ==== App setup ==== */
@@ -981,10 +914,7 @@ fn open_external(app: AppHandle, url: String) {
 fn create_home_window(app: &AppHandle) {
     {
         let state: State<AppState> = app.state();
-        let mut ctx = state.menu_ctx.lock().unwrap();
-        ctx.has_doc = false;
-        ctx.is_untitled = false;
-        ctx.is_edit_mode = false;
+        *state.menu_ctx.lock().unwrap() = MenuContext::default();
     }
     apply_menu(app);
     let _ = WebviewWindowBuilder::new(app, "home", WebviewUrl::App("home.html".into()))
@@ -994,17 +924,14 @@ fn create_home_window(app: &AppHandle) {
 }
 
 fn path_argument(args: &[String]) -> Option<PathBuf> {
-    args.iter()
-        .skip(1)
-        .map(PathBuf::from)
-        .find(|p| p.is_file())
+    args.iter().skip(1).map(PathBuf::from).find(|p| p.is_file())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
 
-    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             // Second instance: open the file it was launched with, or focus.
@@ -1040,12 +967,8 @@ pub fn run() {
             save_file_dialog,
             export_file_dialog,
             close_document,
-            open_modal,
-            open_external
         ])
-        .on_menu_event(|app, event| {
-            handle_menu_event(app, event.id().as_ref());
-        })
+        .on_menu_event(|app, event| handle_menu_event(app, event.id().as_ref()))
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
                 if window.label().starts_with("doc-") {
@@ -1054,12 +977,12 @@ pub fn run() {
             }
         })
         .setup(|app| {
-            let handle = app.handle().clone();
+            let handle = app.handle();
             let args: Vec<String> = std::env::args().collect();
             if let Some(path) = path_argument(&args) {
-                let _ = create_doc_window(&handle, Some(path), None);
+                let _ = create_doc_window(handle, Some(path), None);
             } else {
-                create_home_window(&handle);
+                create_home_window(handle);
             }
             Ok(())
         })
@@ -1067,20 +990,19 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app, event| {
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen { .. } = event {
-                if app.webview_windows().is_empty() {
+            match event {
+                tauri::RunEvent::Reopen { .. } if app.webview_windows().is_empty() => {
                     let app = app.clone();
                     std::thread::spawn(move || create_home_window(&app));
                 }
-            }
-            #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Opened { ref urls } = event {
-                for url in urls {
-                    if let Ok(path) = url.to_file_path() {
+                tauri::RunEvent::Opened { urls } => {
+                    for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
                         open_doc_off_main(app, Some(path), false);
                     }
                 }
+                _ => {}
             }
-            let _ = (app, &event);
+            #[cfg(not(target_os = "macos"))]
+            let _ = (app, event);
         });
 }

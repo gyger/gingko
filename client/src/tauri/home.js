@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 let homeApp
 let elmWorker
 
-async function init (flags) {
+function init (flags) {
   homeApp = window.Elm.Electron.Home.init({ flags })
 
   homeApp.ports.send.subscribe(([tag, data]) => {
@@ -42,7 +42,7 @@ async function clickedImport () {
 async function start () {
   const homeState = await invoke('get_home_state')
   homeState.currentTime = Date.now()
-  await init(homeState)
+  init(homeState)
 
   // Elm worker, reusing Elm code for JSON import parsing.
   elmWorker = window.Elm.Electron.Worker.init({ flags: Date.now() })

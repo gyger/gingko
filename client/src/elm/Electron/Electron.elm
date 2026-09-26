@@ -205,11 +205,10 @@ update msg ({ docModel } as model) =
     case msg of
         GotDocMsg docMsg ->
             let
-                ( newDocModel, newCmd, parentMsgs ) =
+                ( newDocModel, docCmd, parentMsgs ) =
                     Page.Doc.opaqueUpdate docMsg docModel
-                        |> (\( m, c, p ) -> ( m, Cmd.map GotDocMsg c, p ))
             in
-            ( { model | docModel = newDocModel }, newCmd )
+            ( { model | docModel = newDocModel }, Cmd.map GotDocMsg docCmd )
                 |> applyParentMsgs parentMsgs
 
         HistoryToggled isOpen ->
@@ -318,34 +317,30 @@ update msg ({ docModel } as model) =
             ( { model | docModel = Page.Doc.setGlobalData newGlobalData docModel }, Cmd.none )
 
         Incoming incomingMsg ->
-            let
-                passthrough =
-                    Page.Doc.opaqueIncoming incomingMsg docModel
-                        |> (\( d, c, p ) ->
-                                ( { model | docModel = d }, Cmd.map GotDocMsg c )
-                                    |> applyParentMsgs p
-                           )
-            in
             case incomingMsg of
                 SavedToFile newPath savedTime ->
                     let
-                        oldPath =
-                            fileStateToPath model.fileState
+                        newFileState =
+                            if newPath /= fileStateToPath model.fileState then
+                                FileDoc newPath
+
+                            else
+                                model.fileState
 
                         newGlobalData =
                             Page.Doc.getGlobalData docModel
                                 |> GlobalData.updateTime savedTime
-
-                        newDocModel =
+                    in
+                    ( { model
+                        | fileState = newFileState
+                        , docModel =
                             docModel
                                 |> Page.Doc.setDirty False
                                 |> Page.Doc.setGlobalData newGlobalData
-                    in
-                    if newPath /= oldPath then
-                        ( { model | fileState = FileDoc newPath, docModel = newDocModel, lastSave = savedTime }, Cmd.none )
-
-                    else
-                        ( { model | docModel = newDocModel, lastSave = savedTime }, Cmd.none )
+                        , lastSave = savedTime
+                      }
+                    , Cmd.none
+                    )
 
                 DataSaved dataIn ->
                     let
@@ -377,10 +372,10 @@ update msg ({ docModel } as model) =
                             openHistorySlider model
 
                         _ ->
-                            passthrough
+                            docIncoming incomingMsg model
 
                 _ ->
-                    passthrough
+                    docIncoming incomingMsg model
 
         LogErr err ->
             ( model, send (ConsoleLogRequested err) )
@@ -407,21 +402,23 @@ update msg ({ docModel } as model) =
 
         --
         ExitFullscreenRequested ->
-            Page.Doc.opaqueIncoming (Keyboard "esc") docModel
-                |> (\( d, c, p ) ->
-                        ( { model | docModel = d }, Cmd.map GotDocMsg c )
-                            |> applyParentMsgs p
-                   )
+            docIncoming (Keyboard "esc") model
 
         SaveAndExitFullscreen ->
-            Page.Doc.opaqueIncoming (Keyboard "mod+enter") docModel
-                |> (\( d, c, p ) ->
-                        ( { model | docModel = d }, Cmd.map GotDocMsg c )
-                            |> applyParentMsgs p
-                   )
+            docIncoming (Keyboard "mod+enter") model
 
         NoOp ->
             ( model, Cmd.none )
+
+
+docIncoming : Incoming.Msg -> Model -> ( Model, Cmd Msg )
+docIncoming incomingMsg model =
+    let
+        ( newDocModel, docCmd, parentMsgs ) =
+            Page.Doc.opaqueIncoming incomingMsg model.docModel
+    in
+    ( { model | docModel = newDocModel }, Cmd.map GotDocMsg docCmd )
+        |> applyParentMsgs parentMsgs
 
 
 applyParentMsgs : List MsgToParent -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )

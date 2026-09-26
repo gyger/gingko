@@ -23,8 +23,6 @@ fn main() {
             "save_file_dialog",
             "export_file_dialog",
             "close_document",
-            "open_modal",
-            "open_external",
         ]),
     ))
     .expect("failed to run tauri-build");

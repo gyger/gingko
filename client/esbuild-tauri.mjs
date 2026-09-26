@@ -6,7 +6,7 @@ import * as path from 'node:path'
 import { execFileSync, execSync } from 'node:child_process'
 import { replaceKernelPackages } from './elm-kernel-replacements/replace-kernel-packages.mjs'
 
-const ROOT = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname)
+const ROOT = import.meta.dirname
 const OUT = path.join(ROOT, 'tauri-web')
 const isProd = process.argv.includes('--production')
 
@@ -54,7 +54,7 @@ execFileSync(elm, elmArgs, {
 
 /* ==== 3. Bundle the JS entry points ==== */
 
-const result = await esbuild.build({
+await esbuild.build({
   entryPoints: [
     './src/tauri/renderer.js',
     './src/tauri/home.js',
@@ -72,11 +72,6 @@ const result = await esbuild.build({
   }
 })
 
-if (result.errors.length > 0) {
-  console.error(result.errors)
-  process.exit(1)
-}
-
 /* ==== 4. Static assets ==== */
 
 fs.cpSync(path.join(ROOT, 'src', 'static'), OUT, { recursive: true })
@@ -84,7 +79,7 @@ fs.cpSync(path.join(ROOT, 'src', 'tauri', 'static'), OUT, { recursive: true })
 
 /* ==== 5. Tailwind (style.css is the tailwind input) ==== */
 
-execSync(`bunx tailwindcss -i ${path.join(ROOT, 'src', 'static', 'style.css')} -o ${path.join(OUT, 'style.css')}${isProd ? ' --minify' : ''}`, {
+execSync(`bunx tailwindcss -i src/static/style.css -o tauri-web/style.css${isProd ? ' --minify' : ''}`, {
   cwd: ROOT,
   stdio: 'inherit'
 })
