@@ -1,7 +1,7 @@
-Bottom: bf16898ed99916476991eeb13987b733e4addf6e
-Top:    e71c32245f4a46c964f1dc2557161450fa7eea57
+Bottom: 9e2f7acfdad4a2286863266f05a672c1d61ab951
+Top:    973b972ff145e0bde281b4d6014aaee51b5c1872
 Author: Samuel Gyger <samuel.gyger@uni-saarland.de>
-Date:   2026-10-30 16:48:14 +0100
+Date:   2026-10-30 16:58:04 +0100
 
 Render LaTeX math in cards with KaTeX
 
