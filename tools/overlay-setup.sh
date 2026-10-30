@@ -19,14 +19,15 @@ git config --get-all remote.origin.fetch | grep -qxF "$spec" ||
 git fetch origin
 git fetch upstream
 
-# master mirrors upstream and is never committed to.
+# master tracks the fork's master, which is only fast-forwarded to
+# upstream/master (see OVERLAY.md) and never committed to.
 if ! git rev-parse -q --verify refs/heads/master >/dev/null; then
-    git branch --track master upstream/master
+    git branch --track master origin/master
 else
-    git branch --set-upstream-to=upstream/master master >/dev/null
+    git branch --set-upstream-to=origin/master master >/dev/null
     if [ "$(git symbolic-ref -q --short HEAD)" != master ] &&
-        git merge-base --is-ancestor master upstream/master; then
-        git branch -f master upstream/master
+        git merge-base --is-ancestor master origin/master; then
+        git branch -f master origin/master
     fi
 fi
 

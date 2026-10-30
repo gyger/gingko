@@ -12,7 +12,7 @@ stack (`overlay-workflow`).
 
 | branch    | contents                                                       |
 |-----------|----------------------------------------------------------------|
-| `master`  | follows `upstream/master` exactly, never committed to |
+| `master`  | tracks `origin/master`; only fast-forwarded to `upstream/master`, never committed to |
 | `overlay` | upstream `master` + the StGit patch stack, the branch to build |
 
 Remotes: `upstream` is `gingko/client`, `origin` is the personal fork
@@ -21,10 +21,13 @@ Remotes: `upstream` is `gingko/client`, `origin` is the personal fork
 ## Updating to the latest upstream
 
 ```bash
-git switch overlay
 git fetch upstream
-git switch master && git merge --ff-only upstream/master && git switch overlay
-stg rebase upstream/master    # pops all patches, moves base, re-pushes them
+git switch master
+git pull --ff-only                    # origin/master
+git merge --ff-only upstream/master   # pull in upstream
+git push origin master                # keep the fork's master current
+git switch overlay
+stg rebase master             # pops all patches, moves base, re-pushes them
 ```
 
 If a patch no longer applies, `stg rebase` stops at it with conflict markers:
@@ -116,7 +119,7 @@ isn't versioned:
 
 | script | what it does |
 |--------|--------------|
-| `overlay-setup.sh` | one-time setup of a checkout: `upstream` remote, `master` tracking `upstream/master`, fetching stack refs, the `git overlay-adopt` / `git overlay-publish` / `git overlay-build` aliases, and restoring the `overlay` stack |
+| `overlay-setup.sh` | one-time setup of a checkout: `upstream` remote, `master` tracking `origin/master`, fetching stack refs, the `git overlay-adopt` / `git overlay-publish` / `git overlay-build` aliases, and restoring the `overlay` stack |
 | `overlay-publish.sh [branch]` | push a branch and its stack ref in one atomic push (alias `git overlay-publish`) |
 | `overlay-adopt.sh <branch>` | make local `overlay` + stack an exact copy of `<branch>` + its stack on origin (alias `git overlay-adopt`) |
 
