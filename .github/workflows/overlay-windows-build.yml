@@ -24,7 +24,7 @@ jobs:
         working-directory: client
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
 
@@ -34,7 +34,7 @@ jobs:
         with:
           workspaces: client/src-tauri
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: client/elm-home
           key: elm-${{ hashFiles('client/elm.json') }}
