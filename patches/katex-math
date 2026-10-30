@@ -1,0 +1,6 @@
+Bottom: bf16898ed99916476991eeb13987b733e4addf6e
+Top:    bf16898ed99916476991eeb13987b733e4addf6e
+Author: Samuel Gyger <samuel.gyger@uni-saarland.de>
+Date:   2026-10-30 15:33:58 +0100
+
+Render LaTeX math in cards with KaTeX
