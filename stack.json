@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "ebd6284be03a32541d6bad8da9f04c2ff377711c",
-  "head": "3e55cfd5e7ccc2a2089a7ca03de8a6e170db6fe8",
+  "prev": "c21ba061b496efc3d941b9980dcae9702060e1d3",
+  "head": "b446531bdcbdbf17655e82eb576319a44a0ffad7",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -18,7 +18,7 @@
       "oid": "324cc0fb2e939e936eecbbd8fdec569a38333216"
     },
     "katex-math": {
-      "oid": "3e55cfd5e7ccc2a2089a7ca03de8a6e170db6fe8"
+      "oid": "b446531bdcbdbf17655e82eb576319a44a0ffad7"
     },
     "legacy-gko-converter": {
       "oid": "1fd8160e25f9ce12291d750224374d17096285a5"

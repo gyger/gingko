@@ -4,3 +4,31 @@ Author: Samuel Gyger <samuel.gyger@uni-saarland.de>
 Date:   2026-10-30 16:48:14 +0100
 
 Render LaTeX math in cards with KaTeX
+
+Purpose:
+Show $...$ (inline) and $$...$$ (display) LaTeX math rendered in cards
+of the desktop app. Upstream issue gingko/client#18.
+
+Approach:
+- Math.toElements (Elm) rewrites math in card content into
+  <gw-math data-tex="..."> elements before marked renders it. Dollar
+  rules follow pandoc's tex_math_dollars, so prices like "$5 and $10"
+  stay text. Code spans, fenced code and \$ are left alone. The TeX is
+  encoded as numeric entities so marked cannot mangle _ or *.
+- The raw source stays inside the element as fallback text, shown
+  where gw-math is undefined (web app).
+- src/tauri/math.js defines gw-math, rendering with KaTeX on connect.
+  This is safe with Elm's virtual DOM: elm-explorations/markdown is an
+  opaque widget whose inside Elm never patches, and cards are lazy, so
+  elements are only recreated when a card's content changes.
+- esbuild-tauri.mjs copies katex.min.css and its fonts to tauri-web/.
+
+Constraints:
+- Stored content stays plain markdown; conversion happens only in
+  rendering.
+- Web app behaviour unchanged apart from the fallback text.
+- Not rendered in breadcrumbs or the export preview.
+
+Notice: vibe-coded
+
+Assisted by: Claude Code / Opus 5.5
