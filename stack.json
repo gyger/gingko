@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "fa742763d30b7efa974f778b539e0c9605d0c274",
-  "head": "c590ae0524e91f4cd55a188f66d7f39041632b79",
+  "prev": "8ff6f08f04a40f86d77b3926c241ed3ebfaded0e",
+  "head": "d60feafe13c2e883464ca4e456a1848941834c3c",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -9,7 +9,8 @@
     "desktop-themes-and-shortcut-tray",
     "live-reload-on-disk-change",
     "windows-installer-ci",
-    "katex-math"
+    "katex-math",
+    "refresh-temp"
   ],
   "unapplied": [],
   "hidden": [],
@@ -28,6 +29,9 @@
     },
     "overlay-workflow": {
       "oid": "bf717e92078d23d21b70dba8f83bb5fae9aab95a"
+    },
+    "refresh-temp": {
+      "oid": "d60feafe13c2e883464ca4e456a1848941834c3c"
     },
     "tauri-desktop-app": {
       "oid": "0447495cfed3c9dd85a3601dbfee654cd5bbdbfb"
