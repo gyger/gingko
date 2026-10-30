@@ -1,7 +1,7 @@
-Bottom: 385eb974da37aa335c45f80e44f9fa5eff560ce3
-Top:    f61ccad2b04b591556bf9c5a8840a7d5a5f2e654
+Bottom: 4937456839c83272567438b762c877a6c714e5a1
+Top:    bf16898ed99916476991eeb13987b733e4addf6e
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:13:47 +0200
+Date:   2026-10-30 15:24:25 +0100
 
 Build the Windows installer on GitHub for the commit tagged `build`
 

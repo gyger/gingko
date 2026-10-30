@@ -1,7 +1,7 @@
-Bottom: 485e2640f14f49dfb561bffa64e06564b7c0efa1
-Top:    385eb974da37aa335c45f80e44f9fa5eff560ce3
+Bottom: 501d104df5da49f1c8142c7ee7548cb879280273
+Top:    4937456839c83272567438b762c877a6c714e5a1
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:13:47 +0200
+Date:   2026-10-30 15:24:25 +0100
 
 Live-reload documents when the file changes on disk
 

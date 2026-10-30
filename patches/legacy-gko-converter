@@ -1,7 +1,7 @@
-Bottom: c457ee58b72adf1a00b7c6655f5733e394cdb2d9
-Top:    cc6886921d7c56e47b2db0b9c0a26840a7f1498e
+Bottom: c5079243ba63cb3e28d347ab41dc73dac2415a6d
+Top:    33fbc7e13ef078f393436c92644bda0234329526
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:13:47 +0200
+Date:   2026-10-30 15:24:25 +0100
 
 Add converter for legacy Gingko Desktop 2.x .gko archives
 
