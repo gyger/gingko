@@ -1,7 +1,7 @@
 {
   "version": 5,
-  "prev": "8ff6f08f04a40f86d77b3926c241ed3ebfaded0e",
-  "head": "d60feafe13c2e883464ca4e456a1848941834c3c",
+  "prev": "ebd6284be03a32541d6bad8da9f04c2ff377711c",
+  "head": "3e55cfd5e7ccc2a2089a7ca03de8a6e170db6fe8",
   "applied": [
     "overlay-workflow",
     "tauri-desktop-app",
@@ -9,8 +9,7 @@
     "desktop-themes-and-shortcut-tray",
     "live-reload-on-disk-change",
     "windows-installer-ci",
-    "katex-math",
-    "refresh-temp"
+    "katex-math"
   ],
   "unapplied": [],
   "hidden": [],
@@ -19,7 +18,7 @@
       "oid": "324cc0fb2e939e936eecbbd8fdec569a38333216"
     },
     "katex-math": {
-      "oid": "c590ae0524e91f4cd55a188f66d7f39041632b79"
+      "oid": "3e55cfd5e7ccc2a2089a7ca03de8a6e170db6fe8"
     },
     "legacy-gko-converter": {
       "oid": "1fd8160e25f9ce12291d750224374d17096285a5"
@@ -29,9 +28,6 @@
     },
     "overlay-workflow": {
       "oid": "bf717e92078d23d21b70dba8f83bb5fae9aab95a"
-    },
-    "refresh-temp": {
-      "oid": "d60feafe13c2e883464ca4e456a1848941834c3c"
     },
     "tauri-desktop-app": {
       "oid": "0447495cfed3c9dd85a3601dbfee654cd5bbdbfb"
