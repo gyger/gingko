@@ -1,7 +1,7 @@
 Bottom: 438329e64bef9442073caf50c0b49cae14f882da
-Top:    5f67b85cd3d7812910ad4dc221a9fd8b26d76c2e
+Top:    2cc63d712526fd928ca2bd499135c4c61abea69d
 Author: Samuel Gyger <samuel@gyger.tech>
-Date:   2026-09-26 19:13:46 +0200
+Date:   2026-10-30 15:24:24 +0100
 
 Document the StGit overlay workflow and add its helper scripts
 
