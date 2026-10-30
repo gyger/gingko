@@ -19,6 +19,7 @@ import Html5.DragDrop as DragDrop
 import Json.Decode as Json
 import List.Extra as ListExtra
 import Markdown
+import Math
 import Outgoing exposing (Msg(..), send)
 import Page.Doc.Incoming as Incoming exposing (Msg(..))
 import Random
@@ -2686,6 +2687,7 @@ viewContent cardId content =
                 |> Regex.replace openDelDiff (\_ -> "<del class='diff'>")
                 |> Regex.replace closeDelDiff (\_ -> "</del>")
                 |> Regex.replace checkboxes checkboxReplacer
+                |> Math.toElements
     in
     Markdown.toHtmlWith options
         [ attribute "data-private" "lipsum" ]
