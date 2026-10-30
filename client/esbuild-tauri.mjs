@@ -77,6 +77,12 @@ await esbuild.build({
 fs.cpSync(path.join(ROOT, 'src', 'static'), OUT, { recursive: true })
 fs.cpSync(path.join(ROOT, 'src', 'tauri', 'static'), OUT, { recursive: true })
 
+// KaTeX stylesheet with its fonts, linked from renderer.html.
+const KATEX_DIST = path.join(ROOT, 'node_modules', 'katex', 'dist')
+fs.mkdirSync(path.join(OUT, 'katex'), { recursive: true })
+fs.copyFileSync(path.join(KATEX_DIST, 'katex.min.css'), path.join(OUT, 'katex', 'katex.min.css'))
+fs.cpSync(path.join(KATEX_DIST, 'fonts'), path.join(OUT, 'katex', 'fonts'), { recursive: true })
+
 /* ==== 5. Tailwind (style.css is the tailwind input) ==== */
 
 execSync(`bunx tailwindcss -i src/static/style.css -o tauri-web/style.css${isProd ? ' --minify' : ''}`, {
