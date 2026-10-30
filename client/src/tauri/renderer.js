@@ -2,6 +2,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import commitTree from './commit.js'
+import './math.js'
 
 const Mousetrap = require('mousetrap')
 const helpers = require('../shared/doc-helpers')
