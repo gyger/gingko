@@ -1,0 +1,27 @@
+Bottom: 973b972ff145e0bde281b4d6014aaee51b5c1872
+Top:    973b972ff145e0bde281b4d6014aaee51b5c1872
+Author: Samuel Gyger <samuel.gyger@uni-saarland.de>
+Date:   2026-11-09 14:58:14 +0100
+
+Polish start window, card tables and code scrollbars
+
+Purpose:
+Visual touch-ups. Markdown tables in cards had no separation; the
+desktop start window stacked three clashing blue bands with black
+titles; code blocks showed the heavy default scrollbar.
+
+Approach:
+- style.css: card tables get tight cells, hairline row/column rules,
+  a tinted header and faint zebra rows. Code blocks (pre) get a thin,
+  trackless scrollbar. Both use translucent grays instead of theme
+  variables, so every light and dark theme works unchanged.
+- home.css: New/Open/Import share one header band side by side; recent
+  documents become one bordered list on a neutral background. Colours
+  are home-only variables on :root.
+
+Constraints:
+- CSS only; no Elm or markup changes.
+- Header cells keep markdown column alignment (align attribute).
+- The #document horizontal scrollbar stays as upstream styles it.
+
+Assisted by: Claude Code / Opus 5.5
