@@ -3391,6 +3391,55 @@ pre {
   white-space: inherit;
 }
 
+/* Code block scrollbar: hairline thumb, no track, darker on hover. */
+.card .view pre::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+.card .view pre::-webkit-scrollbar-track,
+.card .view pre::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.card .view pre::-webkit-scrollbar-thumb {
+  background: hsla(0, 0%, 50%, 0.3);
+  border-radius: 5px;
+}
+.card .view pre::-webkit-scrollbar-thumb:hover {
+  background: hsla(0, 0%, 50%, 0.6);
+}
+
+/* Tables: tight cells, hairline rows, tinted header.
+   Translucent grays so every theme (light or dark) works. */
+.card .view table {
+  border-collapse: collapse;
+  margin: 0 0 10px;
+  font-size: 92%;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid hsla(0, 0%, 50%, 0.35);
+}
+.card .view th,
+.card .view td {
+  padding: 3px 8px;
+  border-bottom: 1px solid hsla(0, 0%, 50%, 0.2);
+  vertical-align: top;
+}
+.card .view th + th,
+.card .view td + td {
+  border-left: 1px solid hsla(0, 0%, 50%, 0.12);
+}
+.card .view th:not([align]) {
+  text-align: left;
+}
+.card .view th {
+  font-weight: 600;
+  background: hsla(0, 0%, 50%, 0.12);
+  border-bottom: 1px solid hsla(0, 0%, 50%, 0.45);
+}
+.card .view tbody tr:nth-child(even) {
+  background: hsla(0, 0%, 50%, 0.05);
+}
+
 /* ======== CARD (Drop regions) ======== */
 
 .drop-region-above, .drop-region-into, .drop-region-below {

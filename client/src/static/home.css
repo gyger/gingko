@@ -11,7 +11,17 @@ html, body {
 
 body {
   font: caption;
-  background: var(--tree-bg-2-lighter);
+  background: var(--home-list-bg);
+}
+
+/* Home-only palette: brand-blue header over a neutral list. */
+:root {
+  --home-list-bg: hsl(202, 25%, 96%);
+  --home-item-bg: white;
+  --home-item-border: hsl(202, 20%, 86%);
+  --home-item-hover: hsl(202, 60%, 95%);
+  --home-muted-text: hsl(202, 12%, 45%);
+  --home-radius: 6px;
 }
 
 .container h1 {
@@ -45,47 +55,63 @@ label {
   height: 100%;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: min-content min-content auto;
+  grid-template-columns: min-content 1fr;
+  grid-template-rows: min-content auto;
   grid-gap: 0px 0px;
-  grid-template-areas: "top" "middle" "bottom";
+  grid-template-areas: "top middle" "bottom bottom";
 }
+
+/* New / Open / Import share one header band, separated by a divider. */
 #new-row {
   grid-area: top;
-  padding: 20px 15px;
+  padding: 20px 20px 16px;
   background-color: var(--bg-left);
+  border-right: 1px solid hsla(0, 0%, 100%, 0.15);
 }
 #open-import-row {
   grid-area: middle;
-  padding: 20px 15px;
-  background-color: var(--bg-main);
+  padding: 20px 20px 16px;
+  background-color: var(--bg-left);
+}
+.template-row {
+  display: flex;
+  gap: 16px;
 }
 #recent-documents-block {
   grid-area: bottom;
-  padding: 10px 15px 0px;
+  padding: 20px 20px 0px;
   overflow-y: auto;
   min-height: 150px;
 }
 
+/* Recent docs: one bordered list with hairline row dividers. */
 .document-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: hsl(0, 1%, 90%);
-  padding: 0 10px;
-  margin-bottom: 4px;
+  background: var(--home-item-bg);
+  padding: 0 12px;
   cursor: pointer;
-  box-shadow: 1px 0px 2px hsla(0,0%,0%,0.4);
-  border-radius: 2px;
-  border-bottom: 1px solid hsl(0,0%,25%);
-  border-top: 1px solid white;
+  border: 1px solid var(--home-item-border);
+  border-top: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.list-section-header + .document-item {
+  border-top: 1px solid var(--home-item-border);
+  border-radius: var(--home-radius) var(--home-radius) 0 0;
+}
+.document-item:last-child {
+  border-radius: 0 0 var(--home-radius) var(--home-radius);
+  margin-bottom: 20px;
+}
+.list-section-header + .document-item:last-child {
+  border-radius: var(--home-radius);
+}
 
 .document-item:hover {
-  background: white;
+  background: var(--home-item-hover);
 }
 
 .doc-title {
@@ -158,22 +184,31 @@ a.template-item {
 }
 
 .template-thumbnail {
-  width: 120px;
+  width: 104px;
   background: white;
-  height: 80px;
-  margin-bottom: 5px;
-  box-shadow: 1px 1px 4px black;
-  border: 4px solid transparent;
+  height: 72px;
+  margin-bottom: 6px;
+  border-radius: var(--home-radius);
+  box-shadow: 0 1px 3px hsla(0, 0%, 0%, 0.3);
+  border: 3px solid transparent;
+  color: var(--bg-left);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.template-thumbnail path {
+  fill: currentColor;
 }
 
 .template-item:hover .template-thumbnail {
-  border: 4px solid #a6cc90;
+  border-color: var(--selection-color);
+  transform: translateY(-2px);
 }
 
 .template-title {
-  font-weight: bold;
+  font-weight: 600;
   font-size: 90%;
   max-width: 160px;
+  color: white;
 }
 
 .template-description {
@@ -196,16 +231,17 @@ a.template-item {
 }
 
 .list-section-header {
-  color: hsl(221, 44%, 88%);
+  color: var(--normal-text-color);
+  font-weight: 600;
   display: flex;
   margin-bottom: 8px;
-  padding-right: 20px;
+  padding: 0 40px 0 12px;
   justify-content: space-between;
   align-items: baseline;
 }
 
 .list-header {
-  color: hsl(202, 69%, 26%);
+  color: var(--home-muted-text);
   font-size: 80%;
   font-weight: normal;
 }
@@ -216,7 +252,7 @@ a.template-item {
 
 
 .doc-opened {
-  opacity: 0.8;
+  color: var(--home-muted-text);
   font-size: 80%;
 }
 .doc-title, .doc-opened {
